@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="container mt-5 d-flex justify-content-center">
+        <div class="card p-4" style="width: 30rem;">
+            <h3 class="text-center mb-4">สมัครสมาชิก</h3>
+            {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endif %}
+            <form action="{{ url_for('auth.register') }}" method="POST">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <input type="text" class="form-control" name="username" placeholder="ชื่อผู้ใช้งาน" aria-label="Username" required>
+                    </div>
+                    <div class="col-12">
+                        <input type="email" class="form-control" name="email" placeholder="อีเมล์" aria-label="Email" required>
+                    </div>
+                    <div class="col-12">
+                        <input type="password" class="form-control" name="password" placeholder="รหัสผ่าน" aria-label="Password" required>
+                    </div>
+                    <div class="col-6">
+                        <input type="text" class="form-control" name="first_name" placeholder="ชื่อจริง" aria-label="First name" required>
+                    </div>
+                    <div class="col-6">
+                        <input type="text" class="form-control" name="last_name" placeholder="นามสกุล" aria-label="Last name" required>
+                    </div>
+                </div>
+                <div class="row g-3 mt-3">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary w-100">Signup</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
