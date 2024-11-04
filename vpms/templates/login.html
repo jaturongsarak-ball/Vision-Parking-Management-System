@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h2>เข้าสู่ระบบ</h2>
+        </div>
+        <div class="card-body">
+            <form id="login_form" onsubmit="handle_login(event)">
+                <div class="mb-3">
+                    <label for="username" class="form-label">ชื่อผู้ใช้งาน:</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">รหัสผ่าน:</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
+                <button type="button" class="btn btn-secondary"
+                    onclick="window.location.href='/auth/register'">หน้าสมัครสมาชิก</button>
+            </form>
+
+            <div id="error_message" class="alert alert-danger d-none mt-3 alert-dismissible fade show" role="alert">
+                <span id="error_text"></span>
+                <button type="button" class="btn-close" aria-label="Close" onclick="closeError()"></button>
+            </div>
+
+            <div id="success_message" class="alert alert-success d-none mt-3 alert-dismissible fade show" role="alert">
+                <span id="success_text"></span>
+                <button type="button" class="btn-close" aria-label="Close" onclick="closeSuccess()"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function handle_login(event) {
+        event.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        const error_message = document.getElementById('error_message');
+        const success_message = document.getElementById('success_message');
+        const error_text = document.getElementById('error_text');
+        const success_text = document.getElementById('success_text');
+
+        // ซ่อนข้อความก่อนหน้า
+        error_message.classList.add('d-none');
+        success_message.classList.add('d-none');
+        error_text.textContent = '';
+
+        // แสดงหน้าจอโหลด
+        showLoading();
+
+        if (username.trim() === '' || password.trim() === '') {
+            error_text.textContent = 'กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน';
+            error_message.classList.remove('d-none');
+            hideLoading(); // ซ่อนหน้าจอโหลด
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const response_json = await response.json();
+
+            // ซ่อนหน้าจอโหลด
+            hideLoading();
+
+            if (response_json.status === 'error') {
+                error_text.textContent = response_json.message;
+                error_message.classList.remove('d-none');
+                return;
+            }
+
+            // ถ้าการเข้าสู่ระบบสำเร็จ ให้ใช้ข้อความจาก API
+            success_text.textContent = response_json.message; // ใช้ข้อความที่ได้รับจาก API
+            success_message.classList.remove('d-none');
+
+            setTimeout(() => {
+                window.location.href = '/'; // เปลี่ยน '/next_page' เป็น URL ที่คุณต้องการไป
+            }, 500);
+
+        } catch (error) {
+            console.error('Error:', error);
+            hideLoading(); // ซ่อนหน้าจอโหลด
+            error_text.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
+            error_message.classList.remove('d-none');
+        }
+    }
+
+    function closeError() {
+        const error_message = document.getElementById('error_message');
+        error_message.classList.add('d-none');
+    }
+
+    function closeSuccess() {
+        const success_message = document.getElementById('success_message');
+        success_message.classList.add('d-none');
+    }
+</script>
+
+{% endblock %}
