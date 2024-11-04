@@ -24,9 +24,10 @@ def login():
         if username and password:
             try:
                 connection = mysql_database()
-                sql = ('SELECT u.username, u.password, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.username = %s')
+                sql = ('SELECT u.user_id, u.username, u.password, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.username = %s')
                 user = connection.select_one(sql, username)
                 if user and check_password_hash(user.get('password'), password):
+                    session['user_id'] = user.get('user_id')
                     session['username'] = user.get('username')
                     session['role_name'] = user.get('role_name')
                     print(session)
@@ -41,7 +42,7 @@ def login():
                                 'message': 'เข้าสู่ระบบไม่สำเร็จ'})
         else:
             return jsonify({'status': 'error',
-                            'message': 'กรอกข้อมูลให้ครบถ้วน'})
+                            'message': 'กรุณากรอกข้อมูลให้ครบถ้วน'})
     else:
         return render_template('login.html')
 
@@ -72,7 +73,7 @@ def register():
                                 'message': 'สมัครสมาชิกไม่สำเร็จ'})
         else:
             return jsonify({'status': 'error',
-                            'message': 'กรอกข้อมูลให้ครบถ้วน'})
+                            'message': 'กรุณากรอกข้อมูลให้ครบถ้วน'})
     else:
         return render_template('register.html')
 

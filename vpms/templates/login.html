@@ -87,9 +87,7 @@
             success_text.textContent = response_json.message; // ใช้ข้อความที่ได้รับจาก API
             success_message.classList.remove('d-none');
 
-            setTimeout(() => {
-                window.location.href = '/'; // เปลี่ยน '/next_page' เป็น URL ที่คุณต้องการไป
-            }, 500);
+            window.location.href = '/'; // เปลี่ยน '/next_page' เป็น URL ที่คุณต้องการไป
 
         } catch (error) {
             console.error('Error:', error);

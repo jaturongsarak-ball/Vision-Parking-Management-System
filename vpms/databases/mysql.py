@@ -51,3 +51,10 @@ class mysql_database:
         cursor.execute(sql, params)
         self.commit()
         self.close()
+    
+    def update(self, sql, params = None):
+        self.connect()
+        cursor = self.connection.cursor()
+        cursor.execute(sql, params)
+        self.commit()
+        self.close()
