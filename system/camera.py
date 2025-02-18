@@ -1,6 +1,5 @@
 class camera:
-    def __init__(self, source):
+    def __init__(self, source, name, role):
         self.source = source
-
-    def show_info(self):
-        print(self.source)
+        self.name = name
+        self.role = role
