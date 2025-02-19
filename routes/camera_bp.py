@@ -1,6 +1,4 @@
-import time
-import cv2
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, jsonify, request
 from system.camera import camera as camera_class
 import database.mysql as mysql
 
@@ -28,7 +26,6 @@ def toggle_camera():
             else:
                 return jsonify({'message': 'เกิดข้อผิดพลาดในการเปิดกล้อง'})
         else:
-            camera_list[source].stop()
             del camera_list[source]
             print('รายชื่อกล้อง', camera_list)
             return jsonify({'message': 'ปิดกล้องสำเร็จ'})
@@ -61,7 +58,6 @@ def toggle_all_camera():
                 return jsonify({'message': 'ไม่พบข้อมูลกล้อง'})
         if action == 'off':
             for source in list(camera_list.keys()):
-                camera_list[source].stop()
                 del camera_list[source]
             print('รายชื่อกล้อง', camera_list)
             return jsonify({'message': 'ปิดใช้งานกล้องทั้งหมดสำเร็จ'})
@@ -70,36 +66,6 @@ def toggle_all_camera():
 
     else:
         return jsonify({'message': 'เกิดข้อผิดพลาดในการเปิดกล้อง'})
-
-def generate_frame(source):
-    if source not in camera_list:
-        yield (b'--frame\r\n'
-               b'Content-Type: text/plain\r\n\r\n' + b"Source not found!\r\n")
-        return
-    while True:
-        try:
-            frame = camera_list[source].get_frame()
-            if frame is None:
-                yield (b'--frame\r\n'
-                    b'Content-Type: text/plain\r\n\r\n' + b"Unable to retrieve frame!\r\n")
-                continue
-            
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if ret:
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            else:
-                yield (b'--frame\r\n'
-                    b'Content-Type: text/plain\r\n\r\n' + b"Failed to encode frame as JPEG\r\n")
-        except Exception as e:
-            yield (b'--frame\r\n'
-                b'Content-Type: text/plain\r\n\r\n' + b"Source not found!\r\n")
-            return
-
-@camera_bp.route('/live/<string:source>')
-def camera_live(source):
-    return Response(generate_frame(source), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @camera_bp.route('/add', methods=["POST"])
 def add_camera():
