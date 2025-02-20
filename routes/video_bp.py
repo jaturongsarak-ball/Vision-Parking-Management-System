@@ -1,12 +1,11 @@
+from datetime import datetime
 import os
+import re
 import cv2
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, render_template, request
 import database.mysql as mysql
 
 video_bp = Blueprint('video_bp', __name__)
-
-import os
-import cv2
 
 def check_file():
     fetch_video_sql = 'SELECT * FROM video'
@@ -45,29 +44,80 @@ def check_file():
 check_file()
 
 @video_bp.route('/')
-def video_index():
-    fetch_video_sql = 'SELECT * FROM video'
-    result_video = mysql.execute_query(fetch_video_sql)
-    print(result_video)
-    return render_template('video.html')
-
-@video_bp.route('/search')
 def search_videos():
     role = request.args.get('role', 'all')
+    name = request.args.get('name', '')
     date = request.args.get('date', '')
     
     try:
         page = int(request.args.get('page', 1))
-    except ValueError:
+        if page < 1:
+            page = 1
+    except Exception as e:
         page = 1
 
-    search_video_sql = 'select id, file_path from video'
-    mysql.execute_query(search_video_sql)
-    
-    print(role, date, page)
-    
-    return jsonify({
-        'role': role,
-        'date': date,
-        'page': page,
-    })
+    limit = 10
+    offset = (page - 1) * limit
+
+    search_video_sql = 'select * from video where 1=1'
+    params = []
+
+    if role and role != 'all':
+        search_video_sql += " and file_path like %s"
+        params.append(f'{role}%')
+
+    if name:
+        search_video_sql += " and file_path like %s"
+        params.append(f'%{name}%')
+
+    if date:
+        search_video_sql += " and file_path like %s"
+        params.append(f'%{date}%')
+
+    search_video_sql += " order by id desc limit %s offset %s"
+    params.extend([limit, offset])
+
+    result_search_video = mysql.execute_query(search_video_sql, params)
+
+    total_count_sql = 'select count(*) from video where 1=1'
+    total_count_params = []
+
+    if role and role != 'all':
+        total_count_sql += " and file_path like %s"
+        total_count_params.append(f'{role}%')
+
+    if name:
+        total_count_sql += " and file_path like %s"
+        total_count_params.append(f'%{name}%')
+
+    if date:
+        total_count_sql += " and file_path like %s"
+        total_count_params.append(f'%{date}%')
+
+    total_count_result = mysql.execute_query(total_count_sql, total_count_params)
+    total_results = total_count_result[0]['count(*)'] if total_count_result else 0
+    total_pages = (total_results + limit - 1) // limit
+
+    if result_search_video:
+        for video in result_search_video:
+            file_path = video['file_path']
+
+            match = re.search(r'^([^/]+)/([^/]+) (\d{4}-\d{2}-\d{2}) ', file_path)
+            if match:
+                video['role'] = match.group(1)
+                video['name'] = match.group(2)
+
+            match = re.search(r' (\d{4}-\d{2}-\d{2}) (\d{2}-\d{2}-\d{2})', file_path)
+            if match:
+                raw_date = match.group(1)
+                formatted_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d-%m-%Y")
+                video['date'] = formatted_date
+
+                raw_time = match.group(2)
+                formatted_time = raw_time.replace("-", ":")
+                video['time'] = formatted_time
+
+        return render_template('video.html', video_data=result_search_video, page=page, total_pages=total_pages)
+    else:
+        return render_template('video.html', video_data=[], page=page, total_pages=total_pages)
+

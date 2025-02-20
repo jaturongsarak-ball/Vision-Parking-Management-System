@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+
+{% block title %}
+ค้นหาวิดีโอ
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row">
+        <form id="searchVideoForm">
+            <div class="row">
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="cameraRole" class="form-label">หน้าที่การทำงาน</label>
+                    <select class="form-control" id="cameraRole" name="cameraRole">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="parking">ช่องจอดรถ</option>
+                        <option value="entrance">ทางเข้า</option>
+                        <option value="exit">ทางออก</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="name" class="form-label">ชื่อกล้อง</label>
+                    <input type="text" class="form-control" id="name" name="name">
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="date" class="form-label">วันที่</label>
+                    <input type="date" class="form-control" id="date" name="date">
+                </div>
+                <div class="col-12">
+                    <button type="button" onclick="searchVideo(1)" class="btn btn-primary w-100">ค้นหาวิดีโอ</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="table-responsive">
+                <table id="videoTable" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>หน้าที่การทำงาน</th>
+                            <th>ชื่อกล้อง</th>
+                            <th>วันที่</th>
+                            <th>เวลา</th>
+                            <th>การกระทำ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in video_data %}
+                        <tr>
+                            <td>{{ video.role }}</td>
+                            <td>{{ video.name }}</td>
+                            <td>{{ video.date }}</td>
+                            <td>{{ video.time }}</td>
+                            <td><button class="btn btn-info">ดู</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <nav id="pagination" aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=page-1) }}"
+                            aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link"
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=p) }}">{{
+                            p }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page < total_pages %} <li class="page-item">
+                        <a class="page-link"
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=page+1) }}"
+                            aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                        </li>
+                        {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                role: params.get("role"),
+                name: params.get("name"),
+                date: params.get("date"),
+                page: params.get("page")
+            };
+        }
+
+        const params = getURLParams();
+
+        if (params.role) {
+            document.getElementById("cameraRole").value = params.role;
+        }
+        if (params.date) {
+            document.getElementById("date").value = params.date;
+        }
+        if (params.name) {
+            document.getElementById("name").value = params.name;
+        }
+    });
+
+    function searchVideo(page) {
+        const cameraRole = document.getElementById("cameraRole").value;
+        const name = document.getElementById("name").value;
+        const date = document.getElementById("date").value;
+
+        const searchURL = new URL(window.location.origin + '/video');
+        const params = new URLSearchParams();
+
+        if (cameraRole !== 'all') params.append('role', cameraRole);
+        if (name) params.append('name', name);
+        if (date) params.append('date', date);
+
+        params.append('page', page);
+
+        window.location.href = searchURL + '?' + params.toString();
+    }
+</script>
+{% endblock %}
