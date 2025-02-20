@@ -138,7 +138,7 @@ def add_camera():
         fetch_camera_sql = 'select * from camera where source = %s or name = %s'
         result_camera = mysql.execute_query(fetch_camera_sql, (source, name))
         if not result_camera:
-            add_camera_sql = 'insert into camera (source, name, role) VALUES (%s, %s, %s)'
+            add_camera_sql = 'insert into camera (source, name, role) values (%s, %s, %s)'
             result_add_camera = mysql.execute_query(add_camera_sql, (source, name, role))
             if result_add_camera:
                 return jsonify({'status': 'success', 'message': 'เพิ่มกล้องสำเร็จ'})
