@@ -1,0 +1,29 @@
+<div id="messages">
+    <div id="error-message" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+        <span id="error-text"></span>
+    </div>
+    <div id="success-message" class="alert alert-success alert-dismissible fade show d-none" role="alert">
+        <span id="success-text"></span>
+    </div>
+    <div id="warning-message" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
+        <span id="warning-text"></span>
+    </div>
+</div>
+
+<script>
+    function showMessage(type, message) {
+        const messageMap = {
+            error: 'error-message',
+            success: 'success-message',
+            warning: 'warning-message'
+        };
+
+        document.querySelectorAll('#messages .alert').forEach(el => el.classList.add('d-none'));
+
+        if (messageMap[type]) {
+            const element = document.getElementById(messageMap[type]);
+            element.querySelector('span').textContent = message;
+            element.classList.remove('d-none');
+        }
+    }
+</script>

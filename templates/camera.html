@@ -1,0 +1,300 @@
+{% extends "layout.html" %}
+
+{% block title %}
+ตั้งค่ากล้อง
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <form id="addCameraForm">
+            <div class="row">
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="source" class="form-label">แหล่งที่มาของกล้อง</label>
+                    <input type="text" class="form-control" id="source" name="source" required>
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="name" class="form-label">ตั้งชื่อกล้อง</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <label for="cameraRole" class="form-label">หน้าที่การทำงาน</label>
+                    <select class="form-control" id="cameraRole" name="cameraRole" required>
+                        <option value="" disabled selected>กรุณาเลือกการทำงาน</option>
+                        <option value="parking">ช่องจอดรถ</option>
+                        <option value="entrance">ทางเข้า</option>
+                        <option value="exit">ทางออก</option>
+                    </select>
+                </div>
+                <div class="col-12 mb-3">
+                    <button type="button" onclick="addCamera()"
+                        class="btn btn-success w-100 text-truncate">เพิ่มกล้อง</button>
+                </div>
+                <div class="col-12">
+                    {% include "alert.html" %}
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="row mb-3">
+        <div id="toggleAll">
+            <div class="row">
+                <div class="col-6">
+                    <button type="button" class="btn btn-primary w-100 text-truncate"
+                        onclick="toggleAllCamera('on')">เปิดกล้องทั้งหมด</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-danger w-100 text-truncate"
+                        onclick="toggleAllCamera('off')">ปิดกล้องทั้งหมด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div id="cameraCards">
+            <div class="row">
+                {% for camera in camera_data %}
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ camera.name }}</h5>
+
+                            {% if camera.status == 'on' %}
+                            <img id="thumbnail" src="{{ url_for('camera_bp.thumbnail', source=camera.source) }}"
+                                class="img-fluid mb-2" alt="thumbnail" style="max-width: 100%; height: auto;">
+                            {% else %}
+                            <img id="thumbnail" src="{{ url_for('static', filename='img/camera_off.png') }}"
+                                class="img-fluid mb-2" alt="thumbnail" style="max-width: 100%; height: auto;">
+                            {% endif %}
+
+                            <p class="card-text">
+                                <strong>แหล่งที่มา :</strong> {{ camera.source }}<br>
+                                <strong>หน้าที่การทำงาน :</strong>
+                                {{
+                                'ทางเข้า' if camera.role == 'entrance'
+                                else 'ช่องจอดรถ' if camera.role == 'parking'
+                                else 'ทางออก' if camera.role == 'exit'
+                                else 'ไม่ระบุ'
+                                }}
+                            </p>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <button id="camera-toggle-{{ camera.source }}"
+                                        class="btn {{ 'btn-danger' if camera.status == 'on' else 'btn-success' }} w-100 text-truncate"
+                                        onclick="toggleCamera('{{ camera.source }}')">
+                                        <i
+                                            class="{{ 'fas fa-stop-circle' if camera.status == 'on' else 'fas fa-play-circle' }}"></i>
+                                        {{ 'ปิดใช้งาน' if camera.status == 'on' else 'เปิดใช้งาน' }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-4">
+                                    {% if camera.status == 'on' %}
+                                    <a href="{{ url_for('camera_bp.camera_live', source=camera.source) }}"
+                                        class="btn btn-primary w-100 text-truncate">ดูกล้อง</a>
+                                    {% else %}
+                                    <a class="btn btn-primary w-100 text-truncate disabled">ดูกล้อง</a>
+                                    {% endif %}
+                                </div>
+                                <div class="col-4">
+                                    <button type="button"
+                                        onclick="editCamera('{{ camera.source }}', '{{ camera.name }}', '{{ camera.role }}')"
+                                        class="btn btn-warning w-100 {{ 'disabled' if camera.status == 'on' else '' }}">
+                                        แก้ไข
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button"
+                                        onclick="deleteCamera('{{ camera.source }}', '{{ camera.name }}')"
+                                        class="btn btn-danger w-100 {{ 'disabled' if camera.status == 'on' else '' }}">
+                                        ลบ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editCameraModal" tabindex="-1" aria-labelledby="editCameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCameraModalLabel">แก้ไขข้อมูลกล้อง</h5>
+            </div>
+            <div class="modal-body">
+                <form id="editCameraForm">
+                    <div class="mb-3">
+                        <label for="edit_camera_source" class="form-label">แหล่งที่มา</label>
+                        <input type="text" class="form-control" id="edit_camera_source" name="edit_camera_source" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_camera_name" class="form-label">ชื่อกล้อง</label>
+                        <input type="text" class="form-control" id="edit_camera_name" name="edit_camera_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_camera_role" class="form-label">การทำงาน</label>
+                        <select class="form-control" id="edit_camera_role" name="edit_camera_role" required>
+                            <option value="" disabled selected>กรุณาเลือกการทำงาน</option>
+                            <option value="parking">ช่องจอดรถ</option>
+                            <option value="entrance">ทางเข้า</option>
+                            <option value="exit">ทางออก</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ปิด</button>
+                <button type="button" onclick="saveCamera()" class="btn btn-success">บันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteCameraModal" tabindex="-1" aria-labelledby="deleteCameraModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteCameraModalLabel">ยืนยันการลบ</h5>
+            </div>
+            <div class="modal-body">
+                <p><strong id="deleteCameraName"></strong> (แหล่งที่มา: <span id="deleteCameraId"></span>)</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-success" id="confirmDeleteButton"
+                    onclick="confirmDeleteCamera()">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function addCamera() {
+        const source = document.getElementById('source').value;
+        const name = document.getElementById('name').value;
+        const role = document.getElementById('cameraRole').value;
+
+        if (source.trim() === '' || name.trim() === '' || role.trim() === '') {
+            showMessage('warning', 'กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+
+        const params = {
+            source: source,
+            name: name,
+            role: role
+        };
+
+        const response = await connect('POST', '/camera/add', params);
+
+        if (response.status === 'success') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else {
+            showMessage(response.status, response.message);
+        }
+    }
+
+    function editCamera(cameraSource, cameraName, cameraRole) {
+        document.getElementById('edit_camera_source').value = cameraSource;
+        document.getElementById('edit_camera_name').value = cameraName;
+        document.getElementById('edit_camera_role').value = cameraRole;
+        new bootstrap.Modal(document.getElementById('editCameraModal')).show();
+    }
+
+
+    async function saveCamera() {
+        const cameraSource = document.getElementById('edit_camera_source').value;
+        const cameraName = document.getElementById('edit_camera_name').value;
+        const cameraRole = document.getElementById('edit_camera_role').value;
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editCameraModal'));
+
+        if (cameraSource.trim() === '' || cameraName.trim() === '' || cameraRole.trim() === '') {
+            showMessage('warning', 'กรุณากรอกข้อมูลให้ครบถ้วน');
+            modal.hide();
+            return;
+        }
+
+        const params = {
+            source: cameraSource,
+            name: cameraName,
+            role: cameraRole
+        };
+
+        modal.hide();
+
+        const response = await connect('POST', `/camera/update`, params);
+
+        if (response.status === 'success') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else {
+            showMessage(response.status, response.message);
+        }
+    }
+
+    function deleteCamera(cameraSource, cameraName) {
+        document.getElementById('deleteCameraId').textContent = cameraSource;
+        document.getElementById('deleteCameraName').textContent = cameraName;
+        document.getElementById('confirmDeleteButton').setAttribute('data-camera-id', cameraSource);
+        new bootstrap.Modal(document.getElementById('deleteCameraModal')).show();
+    }
+
+    async function confirmDeleteCamera() {
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCameraModal'));
+        modal.hide();
+
+        const cameraSource = document.getElementById('confirmDeleteButton').getAttribute('data-camera-id');
+
+        const params = {
+            source: cameraSource,
+        };
+
+        const response = await connect('POST', `/camera/delete`, params);
+
+        if (response.status === 'success') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else {
+            showMessage(response.status, response.message);
+        }
+    }
+
+    async function toggleCamera(source) {
+        const cameraSource = source;
+
+        const params = {
+            source: cameraSource,
+        };
+
+        const response = await connect('POST', '/camera/toggle', params);
+
+        if (response.status === 'success') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else {
+            showMessage(response.status, response.message);
+        }
+    }
+
+    async function toggleAllCamera(action) {
+        const params = { action: action };
+        const response = await connect('POST', '/camera/toggle_all', params);
+        if (response.status === 'success' || response.status === 'warning') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else {
+            showMessage(response.status, response.message);
+        }
+    }
+</script>
+{% endblock %}

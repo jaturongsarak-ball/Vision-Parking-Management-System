@@ -1,0 +1,16 @@
+<div id="loader-overlay"
+    class="z-3 position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-50 d-none">
+    <div class="spinner-border text-light mb-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="text-center text-light">กำลังโหลด...</div>
+</div>
+
+<script>
+    (function () {
+        const loader = document.getElementById('loader-overlay');
+
+        window.showLoader = () => loader.classList.remove('d-none');
+        window.hideLoader = () => loader.classList.add('d-none');
+    })();
+</script>
