@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 import re
 import cv2
-from flask import Blueprint, render_template, request, url_for
+from flask import Blueprint, render_template, request, send_file, url_for
 import database.mysql as mysql
 
 video_bp = Blueprint('video_bp', __name__)
@@ -125,10 +125,20 @@ def search_videos():
                     ret, buffer = cv2.imencode('.jpg', frame)
                     video['thumbnail'] = f'data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}'
             else:
-                video['thumbnail'] = url_for('static', filename='/img/not_found.jpg')
+                video['thumbnail'] = None
             cap.release()
+
+            video['video_url'] = url_for('video_bp.send_video') + f'?file_path={file_path}'
 
         return render_template('video.html', video_data=result_search_video, page=page, total_pages=total_pages)
     else:
         return render_template('video.html', video_data=[], page=page, total_pages=total_pages)
 
+@video_bp.route('/send_video')
+def send_video():
+    file_path = request.args.get('file_path')
+
+    if file_path and os.path.exists(f'video/{file_path}'):
+        return send_file(f'video/{file_path}', mimetype='video/mp4')
+    else:
+        return None

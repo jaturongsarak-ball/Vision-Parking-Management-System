@@ -36,26 +36,32 @@
     <div class="row mt-3">
         <div class="col-12">
             <div class="table-responsive">
-                <table id="videoTable" class="table table-striped table-bordered">
+                <table id="videoTable" class="table table-striped table-bordered text-center">
                     <thead>
                         <tr>
-                            <th>หน้าที่การทำงาน</th>
-                            <th>ชื่อกล้อง</th>
-                            <th>วันที่</th>
-                            <th>เวลา</th>
-                            <th>การกระทำ</th>
+                            <th class="align-middle">วิดีโอ</th>
+                            <th class="align-middle">ชื่อกล้อง</th>
+                            <th class="align-middle">วันที่</th>
+                            <th class="align-middle">เวลา</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for video in video_data %}
                         <tr>
-                            <td><img src="{{ video.thumbnail }}" alt="ภาพกล้อง"
-                                    class="img-thumbnail" width="100">
+                            <td class="align-middle" style="width: 25%;">
+                                {% if video.thumbnail %}
+                                <img src="{{ video.thumbnail }}" alt="ภาพกล้อง" class="img-thumbnail" 
+                                    style="width: 75%; height: auto; object-fit: cover;"
+                                    data-bs-toggle="modal" data-bs-target="#videoModal"
+                                    onclick="openVideoModalWithDetails('{{ video.video_url }}', '{{ video.name }}', '{{ video.date }}', '{{ video.time }}')">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='img/not_found.jpg') }}" alt="ภาพกล้อง"
+                                    class="img-thumbnail" style="width: 75%; height: auto; object-fit: cover;">
+                                {% endif %}
                             </td>
-                            <td>{{ video.name }}</td>
-                            <td>{{ video.date }}</td>
-                            <td>{{ video.time }}</td>
-                            <td><button class="btn btn-info">ดู</button></td>
+                            <td class="align-middle">{{ video.name }}</td>
+                            <td class="align-middle">{{ video.date }}</td>
+                            <td class="align-middle">{{ video.time }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -96,6 +102,32 @@
                         {% endif %}
                 </ul>
             </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal สำหรับแสดงวิดีโอ -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalLabel">
+                    <span id="modalCameraName"></span> -
+                    <span id="modalDate"></span>
+                    <span id="modalTime"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <video id="videoPlayer" class="w-100" controls>
+                    <source id="videoSource" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <!-- ปุ่มดาวน์โหลด -->
+                <a id="downloadBtn" class="btn btn-success" href="#" download>ดาวน์โหลดวิดีโอ</a>
+            </div>
         </div>
     </div>
 </div>
@@ -141,5 +173,23 @@
 
         window.location.href = searchURL + '?' + params.toString();
     }
+
+    function openVideoModalWithDetails(videoUrl, cameraName, date, time) {
+        var videoPlayer = document.getElementById("videoPlayer");
+        var videoSource = document.getElementById("videoSource");
+
+        // กำหนดแหล่งที่มาของวิดีโอใน Modal
+        videoSource.src = videoUrl;
+        videoPlayer.load();  // โหลดวิดีโอใหม่
+
+        // เปลี่ยนชื่อกล้อง วันที่ เวลา ใน Modal
+        document.getElementById("modalCameraName").textContent = cameraName;
+        document.getElementById("modalDate").textContent = date;
+        document.getElementById("modalTime").textContent = time;
+
+        // ปรับปุ่มดาวน์โหลดให้ดาวน์โหลดวิดีโอ
+        document.getElementById("downloadBtn").href = videoUrl;
+    }
 </script>
+
 {% endblock %}
