@@ -57,7 +57,7 @@ def search_videos():
     except Exception as e:
         page = 1
 
-    limit = 10
+    limit = 15
     offset = (page - 1) * limit
 
     search_video_sql = 'select * from video where 1=1'
@@ -99,6 +99,9 @@ def search_videos():
     total_results = total_count_result[0]['count(*)'] if total_count_result else 0
     total_pages = (total_results + limit - 1) // limit
 
+    start_page = max(1, page - 4)
+    end_page = min(total_pages, start_page + 9)
+
     if result_search_video:
         for video in result_search_video:
             file_path = video['file_path']
@@ -130,9 +133,9 @@ def search_videos():
 
             video['video_url'] = url_for('video_bp.send_video') + f'?file_path={file_path}'
 
-        return render_template('video.html', video_data=result_search_video, page=page, total_pages=total_pages)
+        return render_template('video.html', video_data=result_search_video, page=page, total_pages=total_pages, start_page=start_page, end_page=end_page)
     else:
-        return render_template('video.html', video_data=[], page=page, total_pages=total_pages)
+        return render_template('video.html', video_data=[], page=page, total_pages=total_pages, start_page=start_page, end_page=end_page)
 
 @video_bp.route('/send_video')
 def send_video():

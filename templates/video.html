@@ -50,9 +50,9 @@
                         <tr>
                             <td class="align-middle" style="width: 25%;">
                                 {% if video.thumbnail %}
-                                <img src="{{ video.thumbnail }}" alt="ภาพกล้อง" class="img-thumbnail" 
-                                    style="width: 75%; height: auto; object-fit: cover;"
-                                    data-bs-toggle="modal" data-bs-target="#videoModal"
+                                <img src="{{ video.thumbnail }}" alt="ภาพกล้อง" class="img-thumbnail"
+                                    style="width: 75%; height: auto; object-fit: cover;" data-bs-toggle="modal"
+                                    data-bs-target="#videoModal"
                                     onclick="openVideoModalWithDetails('{{ video.video_url }}', '{{ video.name }}', '{{ video.date }}', '{{ video.time }}')">
                                 {% else %}
                                 <img src="{{ url_for('static', filename='img/not_found.jpg') }}" alt="ภาพกล้อง"
@@ -83,27 +83,55 @@
                         </a>
                     </li>
                     {% endif %}
-
-                    {% for p in range(1, total_pages + 1) %}
+    
+                    {% if start_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=1) }}">
+                            1
+                        </a>
+                    </li>
+                    {% if start_page > 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endif %}
+    
+                    {% for p in range(start_page, end_page + 1) %}
                     <li class="page-item {% if p == page %}active{% endif %}">
                         <a class="page-link"
-                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=p) }}">{{
-                            p }}</a>
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=p) }}">
+                            {{ p }}
+                        </a>
                     </li>
                     {% endfor %}
-
-                    {% if page < total_pages %} <li class="page-item">
+    
+                    {% if end_page < total_pages %}
+                    {% if end_page < total_pages - 1 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=total_pages) }}">
+                            {{ total_pages }}
+                        </a>
+                    </li>
+                    {% endif %}
+    
+                    {% if page < total_pages %}
+                    <li class="page-item">
                         <a class="page-link"
                             href="{{ url_for('video_bp.search_videos', role=request.args.get('role'), name=request.args.get('name'), date=request.args.get('date'), page=page+1) }}"
                             aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
-                        </li>
-                        {% endif %}
+                    </li>
+                    {% endif %}
                 </ul>
             </nav>
         </div>
     </div>
+    
+
 </div>
 
 <!-- Modal สำหรับแสดงวิดีโอ -->
@@ -125,7 +153,6 @@
                 </video>
             </div>
             <div class="modal-footer d-flex justify-content-center">
-                <!-- ปุ่มดาวน์โหลด -->
                 <a id="downloadBtn" class="btn btn-success" href="#" download>ดาวน์โหลดวิดีโอ</a>
             </div>
         </div>
@@ -178,16 +205,13 @@
         var videoPlayer = document.getElementById("videoPlayer");
         var videoSource = document.getElementById("videoSource");
 
-        // กำหนดแหล่งที่มาของวิดีโอใน Modal
         videoSource.src = videoUrl;
-        videoPlayer.load();  // โหลดวิดีโอใหม่
+        videoPlayer.load();
 
-        // เปลี่ยนชื่อกล้อง วันที่ เวลา ใน Modal
         document.getElementById("modalCameraName").textContent = cameraName;
         document.getElementById("modalDate").textContent = date;
         document.getElementById("modalTime").textContent = time;
 
-        // ปรับปุ่มดาวน์โหลดให้ดาวน์โหลดวิดีโอ
         document.getElementById("downloadBtn").href = videoUrl;
     }
 </script>
