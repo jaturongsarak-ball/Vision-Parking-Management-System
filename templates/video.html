@@ -49,7 +49,9 @@
                     <tbody>
                         {% for video in video_data %}
                         <tr>
-                            <td>{{ video.role }}</td>
+                            <td><img src="{{ video.thumbnail }}" alt="ภาพกล้อง"
+                                    class="img-thumbnail" width="100">
+                            </td>
                             <td>{{ video.name }}</td>
                             <td>{{ video.date }}</td>
                             <td>{{ video.time }}</td>

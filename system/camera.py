@@ -70,7 +70,7 @@ class camera:
                     video_writer.write(frame)
 
                 elapsed_time = time.time() - start_time
-                if elapsed_time >= 5:
+                if elapsed_time >= 300:
                     break
 
                 time.sleep(frame_duration)

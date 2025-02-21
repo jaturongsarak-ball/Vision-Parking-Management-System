@@ -1,8 +1,9 @@
+import base64
 from datetime import datetime
 import os
 import re
 import cv2
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, url_for
 import database.mysql as mysql
 
 video_bp = Blueprint('video_bp', __name__)
@@ -63,18 +64,18 @@ def search_videos():
     params = []
 
     if role and role != 'all':
-        search_video_sql += " and file_path like %s"
+        search_video_sql += ' and file_path like %s'
         params.append(f'{role}%')
 
     if name:
-        search_video_sql += " and file_path like %s"
+        search_video_sql += ' and file_path like %s'
         params.append(f'%{name}%')
 
     if date:
-        search_video_sql += " and file_path like %s"
+        search_video_sql += ' and file_path like %s'
         params.append(f'%{date}%')
 
-    search_video_sql += " order by id desc limit %s offset %s"
+    search_video_sql += ' order by id desc limit %s offset %s'
     params.extend([limit, offset])
 
     result_search_video = mysql.execute_query(search_video_sql, params)
@@ -83,15 +84,15 @@ def search_videos():
     total_count_params = []
 
     if role and role != 'all':
-        total_count_sql += " and file_path like %s"
+        total_count_sql += ' and file_path like %s'
         total_count_params.append(f'{role}%')
 
     if name:
-        total_count_sql += " and file_path like %s"
+        total_count_sql += ' and file_path like %s'
         total_count_params.append(f'%{name}%')
 
     if date:
-        total_count_sql += " and file_path like %s"
+        total_count_sql += ' and file_path like %s'
         total_count_params.append(f'%{date}%')
 
     total_count_result = mysql.execute_query(total_count_sql, total_count_params)
@@ -110,12 +111,22 @@ def search_videos():
             match = re.search(r' (\d{4}-\d{2}-\d{2}) (\d{2}-\d{2}-\d{2})', file_path)
             if match:
                 raw_date = match.group(1)
-                formatted_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d-%m-%Y")
+                formatted_date = datetime.strptime(raw_date, '%Y-%m-%d').strftime('%d-%m-%Y')
                 video['date'] = formatted_date
 
                 raw_time = match.group(2)
-                formatted_time = raw_time.replace("-", ":")
+                formatted_time = raw_time.replace('-', ':')
                 video['time'] = formatted_time
+
+            cap = cv2.VideoCapture(f'video/{file_path}')
+            if cap.isOpened():
+                ret, frame = cap.read()
+                if ret:
+                    ret, buffer = cv2.imencode('.jpg', frame)
+                    video['thumbnail'] = f'data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}'
+            else:
+                video['thumbnail'] = url_for('static', filename='/img/not_found.jpg')
+            cap.release()
 
         return render_template('video.html', video_data=result_search_video, page=page, total_pages=total_pages)
     else:
