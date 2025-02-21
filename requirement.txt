@@ -1,3 +1,4 @@
 pip install Flask
 pip install PyMySQL
 pip install opencv-python
+pip install ultralytics
