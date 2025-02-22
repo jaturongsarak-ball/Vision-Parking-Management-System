@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import cv2
+from ultralytics import YOLO
 import database.mysql as mysql
 
 class camera:
@@ -9,6 +10,9 @@ class camera:
         self.source = source
         self.name = name
         self.role = role
+
+        self.model = YOLO('system/car_model.pt', verbose=False)
+        self.model.fuse()
 
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
@@ -38,6 +42,19 @@ class camera:
             ret, frame = self.capture.read()
             if ret:
                 with self.lock:
+                    results = self.model.track(frame, tracker="bytetrack.yaml", persist=True, conf=0.6, verbose=False)
+                    
+                    for result in results:
+                        for box in result.boxes:
+                            x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+                            confidence = box.conf[0]
+                            object_id = box.id[0]
+
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (62, 123, 39), 2)
+
+                            cv2.putText(frame, f"ID: {object_id} Conf: {confidence:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (62, 123, 39), 2)
+                            
                     self.frame = frame
             else:
                 self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)

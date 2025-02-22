@@ -127,6 +127,10 @@ def thumbnail(source):
 def camera_live(source):
     return Response(generate_frame(source), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@camera_bp.route('/parking_space/<string:source>')
+def camera_parking_space(source):
+    return render_template('camera_parking_space.html', source=source)
+
 @camera_bp.route('/add', methods=["POST"])
 def add_camera():
     data = request.get_json()

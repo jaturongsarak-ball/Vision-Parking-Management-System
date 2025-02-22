@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+
+{% block title %}
+ตั้งค่าที่จอดรถ
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-12">
+            <div style="position: relative; display: inline-block; max-width: 100%; height: auto;">
+                <img id="live" src="{{ url_for('camera_bp.camera_live', source=source) }}" class="img-fluid" alt="Live Camera">
+                <canvas id="canvas" style="position: absolute; top: 0; left: 0; pointer-events: auto;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ตารางแสดงข้อมูลจุด (รองรับ responsive) -->
+    <div class="mt-4">
+        <h5>ข้อมูลจุด</h5>
+        <div class="table-responsive"> <!-- เพิ่ม div ที่ใช้ class table-responsive -->
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ชื่อจุด</th>
+                        <th>ตำแหน่ง (X, Y)</th>
+                        <th>การกระทำ</th>
+                    </tr>
+                </thead>
+                <tbody id="pointsTableBody">
+                    <!-- ข้อมูลจะถูกเพิ่มที่นี่ -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const img = document.getElementById("live");
+    const canvas = document.getElementById("canvas");
+    const pointsTableBody = document.getElementById("pointsTableBody");
+
+    let currentMode = "add";
+    let points = JSON.parse(localStorage.getItem("points")) || [];  // โหลดข้อมูลจุดจาก localStorage ถ้ามี
+
+    function resizeCanvas() {
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+    }
+
+    function getPosition(event) {
+        const imgRect = img.getBoundingClientRect();
+        const scaleX = imgRect.width / img.naturalWidth;
+        const scaleY = imgRect.height / img.naturalHeight;
+
+        const x = Math.round((event.offsetX) / scaleX);
+        const y = Math.round((event.offsetY) / scaleY);
+
+        return { x, y };
+    }
+
+    function addPoint(event) {
+        const { x, y } = getPosition(event);
+        const pointName = prompt("กรุณาระบุชื่อจุด:", "จุดที่ 1");  // ขอชื่อสำหรับจุดที่เพิ่ม
+
+        if (pointName) {
+            points.push({ name: pointName, x: x, y: y });  // เพิ่มข้อมูลจุดในอาร์เรย์
+            localStorage.setItem("points", JSON.stringify(points));  // บันทึกข้อมูลใน localStorage
+            updatePointsTable();  // อัพเดตตาราง
+        }
+
+        drawMark();
+    }
+
+    function deletePoint(event) {
+        const { x, y } = getPosition(event);
+        points = points.filter(point => !(Math.abs(point.x - x) < 10 && Math.abs(point.y - y) < 10));  // ลบจุดที่อยู่ใกล้ๆ
+        localStorage.setItem("points", JSON.stringify(points));  // อัพเดตข้อมูลใน localStorage
+        updatePointsTable();  // อัพเดตตาราง
+        drawMark();
+    }
+
+    function drawMark() {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        points.forEach(point => {
+            const imgRect = img.getBoundingClientRect();
+            const scaleX = imgRect.width / img.naturalWidth;
+            const scaleY = imgRect.height / img.naturalHeight;
+
+            // วาดเครื่องหมาย "X" แทนวงกลม
+            ctx.beginPath();
+            ctx.moveTo(point.x * scaleX - 5, point.y * scaleY - 5);
+            ctx.lineTo(point.x * scaleX + 5, point.y * scaleY + 5);
+            ctx.moveTo(point.x * scaleX - 5, point.y * scaleY + 5);
+            ctx.lineTo(point.x * scaleX + 5, point.y * scaleY - 5);
+            ctx.strokeStyle = "orange";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    }
+
+    function updatePointsTable() {
+        // ล้างตารางก่อน
+        pointsTableBody.innerHTML = "";
+
+        points.forEach((point, index) => {
+            const row = document.createElement("tr");
+
+            // สร้างเซลล์ในตาราง
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${point.name}</td>
+                <td>(${point.x}, ${point.y})</td>
+                <td><button class="btn btn-danger" onclick="removePoint(${index})">ลบ</button></td>
+            `;
+
+            pointsTableBody.appendChild(row);
+        });
+    }
+
+    function removePoint(index) {
+        points.splice(index, 1);  // ลบจุดที่เลือก
+        localStorage.setItem("points", JSON.stringify(points));  // อัพเดตข้อมูลใน localStorage
+        updatePointsTable();  // อัพเดตตาราง
+        drawMark();  // วาดใหม่
+    }
+
+    window.addEventListener("load", () => {
+        resizeCanvas();
+        drawMark();
+        updatePointsTable();  // แสดงตารางเมื่อโหลดหน้า
+
+        canvas.addEventListener("click", (event) => {
+            if (currentMode === "add") {
+                addPoint(event);
+            } else if (currentMode === "remove") {
+                deletePoint(event);
+            }
+        });
+    });
+
+    window.addEventListener("resize", () => {
+        resizeCanvas();
+        drawMark();
+    });
+</script>
+{% endblock %}
