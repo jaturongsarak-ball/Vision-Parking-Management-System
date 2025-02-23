@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}
+กล้องไลฟ์สด
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-12 text-center">
+            <div style="position: relative; display: inline-block; max-width: 100%; height: auto;">
+                <img id="live" src="{{ url_for('camera_bp.camera_live', source=source) }}" class="img-fluid"
+                    alt="Live Camera">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

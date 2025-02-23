@@ -89,33 +89,40 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-4">
-                                    {% if camera.status == 'on' %}
-                                    {% if camera.role == 'parking' %}
-                                    <a href="{{ url_for('camera_bp.camera_parking_space', source=camera.source) }}"
-                                        class="btn btn-primary w-100 text-truncate">ตั้งค่าที่จอด</a>
-                                    {% else %}
-                                    <a href="{{ url_for('camera_bp.camera_live', source=camera.source) }}"
+
+                                {% if camera.status == 'on' %}
+                                {% if camera.role == 'parking' %}
+                                <div class="col-6">
+                                    <a href="{{ url_for('camera_bp.camera_stream_live', source=camera.source) }}"
                                         class="btn btn-primary w-100 text-truncate">ดูกล้อง</a>
-                                    {% endif %}
-                                    {% else %}
-                                    <a class="btn btn-primary w-100 text-truncate disabled">ดูกล้อง</a>
-                                    {% endif %}
                                 </div>
-                                <div class="col-4">
+                                <div class="col-6">
+                                    <a href="{{ url_for('camera_bp.camera_parking_space', source=camera.source) }}"
+                                        class="btn btn-warning w-100 text-truncate">ตั้งค่าที่จอด</a>
+                                </div>
+                                {% else %}
+                                <div class="col-12">
+                                    <a href="{{ url_for('camera_bp.camera_stream_live', source=camera.source) }}"
+                                        class="btn btn-primary w-100 text-truncate">ดูกล้อง</a>
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <div class="col-6">
+
                                     <button type="button"
                                         onclick="editCamera('{{ camera.source }}', '{{ camera.name }}', '{{ camera.role }}')"
-                                        class="btn btn-warning w-100 {{ 'disabled' if camera.status == 'on' else '' }}">
+                                        class="btn btn-warning w-100">
                                         แก้ไข
                                     </button>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-6">
                                     <button type="button"
                                         onclick="deleteCamera('{{ camera.source }}', '{{ camera.name }}')"
-                                        class="btn btn-danger w-100 {{ 'disabled' if camera.status == 'on' else '' }}">
+                                        class="btn btn-danger w-100">
                                         ลบ
                                     </button>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

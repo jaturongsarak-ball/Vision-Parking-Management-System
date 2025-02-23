@@ -128,6 +128,11 @@ def camera_live():
     source = request.args.get('source')
     return Response(generate_frame(source), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@camera_bp.route('/parking_stream_live')
+def camera_stream_live():
+    source = request.args.get('source')
+    return render_template('camera_live.html', source=source)
+
 @camera_bp.route('/parking_space')
 def camera_parking_space():
     source = request.args.get('source')
