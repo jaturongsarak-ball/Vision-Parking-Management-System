@@ -7,13 +7,13 @@
 {% block content %}
 <div class="container mt-3">
     <div id="total-status" class="row">
-        {% set total_available = parking_status | sum(attribute='available') %}
+        {% set total_occupied = parking_status | sum(attribute='occupied') %}
         {% set total_spaces = parking_status | sum(attribute='total') %}
-        {% set available_percentage = (total_available / total_spaces * 100) if total_spaces > 0 else 0 %}
+        {% set occupied_percentage = (total_occupied / total_spaces * 100) if total_spaces > 0 else 0 %}
     
-        {% if available_percentage == 100 %}
+        {% if occupied_percentage == 100 %}
         {% set total_color = "danger" %}
-        {% elif available_percentage >= 50 %}
+        {% elif occupied_percentage >= 50 %}
         {% set total_color = "warning" %}
         {% else %}
         {% set total_color = "success" %}
@@ -25,7 +25,7 @@
                         <h1>ทั้งหมด</h1>
                     </div>
                     <div class="col-12">
-                        <h1>{{ total_available }} / {{ total_spaces }}</h1>
+                        <h1>{{ total_occupied }} / {{ total_spaces }}</h1>
                     </div>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                         <h1>{{ space['name'] }}</h1>
                     </div>
                     <div class="col-12">
-                        <h1>{{ space['available'] }} / {{ space['total'] }}</h1>
+                        <h1>{{ space['occupied'] }} / {{ space['total'] }}</h1>
                     </div>
                 </div>
             </div>
@@ -56,15 +56,15 @@
 
             const parkingStatus = response.parking_status;
 
-            let totalAvailable = 0;
+            let totalOccupied = 0;
             let totalSpaces = 0;
 
             parkingStatus.forEach(space => {
-                totalAvailable = totalAvailable + parseInt(space.available)
+                totalOccupied = totalOccupied + parseInt(space.occupied)
                 totalSpaces = totalSpaces + space.total
             });
 
-            const availablePercentage = totalSpaces > 0 ? (totalAvailable / totalSpaces) * 100 : 0;
+            const availablePercentage = totalSpaces > 0 ? (totalOccupied / totalSpaces) * 100 : 0;
 
             let totalColor;
             if (availablePercentage === 100) {
@@ -97,7 +97,7 @@
             totalTitle.textContent = "ทั้งหมด";
 
             const totalCount = document.createElement('h1');
-            totalCount.textContent = `${totalAvailable} / ${totalSpaces}`;
+            totalCount.textContent = `${totalOccupied} / ${totalSpaces}`;
 
             col_1.appendChild(totalTitle);
             col_2.appendChild(totalCount);
@@ -131,7 +131,7 @@
                 spaceName.textContent = space.name;
 
                 const spaceAvailability = document.createElement('h1');
-                spaceAvailability.textContent = `${space.available} / ${space.total}`;
+                spaceAvailability.textContent = `${space.occupied} / ${space.total}`;
 
                 col_1.appendChild(spaceName);
                 col_2.appendChild(spaceAvailability);

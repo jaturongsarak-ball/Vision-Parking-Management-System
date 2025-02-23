@@ -64,7 +64,7 @@ class camera:
 
     def process_parking(self, frame):
         results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
-        
+
         def is_parking(space, x1, y1, x2, y2):
             return x1 <= space['x'] <= x2 and y1 <= space['y'] <= y2
 
@@ -84,7 +84,11 @@ class camera:
         for space in self.parking_space:
             color = (0, 0, 255) if space['id'] in occupied_spaces else (0, 255, 0)
             frame = cv2.circle(frame, (space['x'], space['y']), 5, color, -1)
+            status = 'occupied' if space['id'] in occupied_spaces else 'available'
+            status_update_sql = 'update parking_space set status = %s where id = %s'
+            mysql.execute_query(status_update_sql, (status, space['id']))
 
+        self.update_parking_space()
         return frame
 
 
