@@ -25,7 +25,7 @@ class camera:
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
             raise ValueError(f'ไม่สามารถเปิดกล้องได้')
-        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 100000)
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 100)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.capture.set(cv2.CAP_PROP_FPS, 30)
