@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}
+สถานะที่จอดรถ
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div id="total-status" class="row">
+        {% set total_available = parking_status | sum(attribute='available') %}
+        {% set total_spaces = parking_status | sum(attribute='total') %}
+        {% set available_percentage = (total_available / total_spaces * 100) if total_spaces > 0 else 0 %}
+    
+        {% if available_percentage == 100 %}
+        {% set total_color = "danger" %}
+        {% elif available_percentage >= 50 %}
+        {% set total_color = "warning" %}
+        {% else %}
+        {% set total_color = "success" %}
+        {% endif %}
+        <div class="col-12 mb-3">
+            <div class="card bg-{{ total_color }} text-white rounded text-center">
+                <div class="card-body">
+                    <div class="col-12">
+                        <h1>ทั้งหมด</h1>
+                    </div>
+                    <div class="col-12">
+                        <h1>{{ total_available }} / {{ total_spaces }}</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="parking-status" class="row">
+        {% for space in parking_status %}
+        <div class="col-4 mb-3">
+            <div class="card bg-{{ space['color'] }} text-white rounded text-center">
+                <div class="card-body">
+                    <div class="col-12">
+                        <h1>{{ space['name'] }}</h1>
+                    </div>
+                    <div class="col-12">
+                        <h1>{{ space['available'] }} / {{ space['total'] }}</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+    async function updateData() {
+        const response = await connect_no_loader('POST', '/parking/');
+        if (response.status === 'success') {
+
+            const parkingStatus = response.parking_status;
+
+            let totalAvailable = 0;
+            let totalSpaces = 0;
+
+            parkingStatus.forEach(space => {
+                totalAvailable = totalAvailable + parseInt(space.available)
+                totalSpaces = totalSpaces + space.total
+            });
+
+            const availablePercentage = totalSpaces > 0 ? (totalAvailable / totalSpaces) * 100 : 0;
+
+            let totalColor;
+            if (availablePercentage === 100) {
+                totalColor = "danger";
+            } else if (availablePercentage >= 50) {
+                totalColor = "warning";
+            } else {
+                totalColor = "success";
+            }
+
+            const totalStatusContainer = document.getElementById('total-status');
+            totalStatusContainer.innerHTML = '';
+
+            const totalCardContainer = document.createElement('div');
+            totalCardContainer.classList.add('col-12', 'mb-3');
+            
+            const totalCard = document.createElement('div');
+            totalCard.classList.add('card', `bg-${totalColor}`, 'text-white', 'rounded', 'text-center');
+            
+            const totalCardBody = document.createElement('div');
+            totalCardBody.classList.add('card-body');
+
+            const col_1 = document.createElement('div');
+            totalCardBody.classList.add('col-12');
+            
+            const col_2 = document.createElement('div');
+            totalCardBody.classList.add('col-12');
+
+            const totalTitle = document.createElement('h1');
+            totalTitle.textContent = "ทั้งหมด";
+
+            const totalCount = document.createElement('h1');
+            totalCount.textContent = `${totalAvailable} / ${totalSpaces}`;
+
+            col_1.appendChild(totalTitle);
+            col_2.appendChild(totalCount);
+            totalCardBody.appendChild(col_1);
+            totalCardBody.appendChild(col_2);
+            totalCard.appendChild(totalCardBody);
+            totalCardContainer.appendChild(totalCard);
+            totalStatusContainer.appendChild(totalCardContainer);
+
+
+            const parkingStatusContainer = document.getElementById('parking-status');
+            parkingStatusContainer.innerHTML = '';
+            parkingStatus.forEach(space => {
+
+                const cardContainer = document.createElement('div');
+                cardContainer.classList.add('col-4', 'mb-3');
+
+                const card = document.createElement('div');
+                card.classList.add('card', `bg-${space.color}`, 'text-white', 'rounded', 'text-center');
+
+                const cardBody = document.createElement('div');
+                cardBody.classList.add('card-body');
+
+                const col_1 = document.createElement('div');
+                cardBody.classList.add('col-12');
+
+                const col_2 = document.createElement('div');
+                cardBody.classList.add('col-12');
+                
+                const spaceName = document.createElement('h1');
+                spaceName.textContent = space.name;
+
+                const spaceAvailability = document.createElement('h1');
+                spaceAvailability.textContent = `${space.available} / ${space.total}`;
+
+                col_1.appendChild(spaceName);
+                col_2.appendChild(spaceAvailability);
+                cardBody.appendChild(col_1);
+                cardBody.appendChild(col_2);
+                card.appendChild(cardBody);
+                cardContainer.appendChild(card);
+                parkingStatusContainer.appendChild(cardContainer);
+            });
+
+        }
+    }
+    setInterval(updateData, 2000);
+</script>
+{% endblock %}

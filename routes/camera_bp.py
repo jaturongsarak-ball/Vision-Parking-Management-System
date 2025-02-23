@@ -1,4 +1,3 @@
-import time
 import cv2
 from flask import Blueprint, Response, jsonify, render_template, request
 from system.camera import camera as camera_class
@@ -141,16 +140,17 @@ def save_parking_space():
     source = request.args.get('source')
     data = request.get_json()
     if data:
-        print(data)
         delete_parking_space_sql = 'delete from parking_space where source = %s'
         mysql.execute_query(delete_parking_space_sql, (source))
         for parking_space in data:
             add_parking_space = 'insert into parking_space (name, x, y, source, status) values (%s, %s, %s, %s, %s)'
             mysql.execute_query(add_parking_space, (parking_space['name'], parking_space['x'], parking_space['y'], source, 'available'))
+        camera_list[source].update_parking_space()
         return jsonify({'status': 'success', 'message': 'บันทึกข้อมูลสำเร็จ'})
     else:
         delete_parking_space_sql = 'delete from parking_space where source = %s'
         mysql.execute_query(delete_parking_space_sql, (source))
+        camera_list[source].update_parking_space()
         return jsonify({'status': 'success', 'message': 'บันทึกข้อมูลสำเร็จ'})
 
 

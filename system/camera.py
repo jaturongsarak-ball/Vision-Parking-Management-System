@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import threading
 import time
@@ -12,9 +13,14 @@ class camera:
         self.source = source
         self.name = name
         self.role = role
-
-        self.model = YOLO('system/car_model.pt', verbose=False)
-        self.model.fuse()
+        self.parking_space = None
+        if role == 'parking':
+            self.model = YOLO('system/car_model.pt', verbose=False)
+            self.update_parking_space()
+        elif role == 'entrance' or role == 'exit':
+            self.model = YOLO('system/license_plate_model.pt', verbose=False)
+        else:
+            raise ValueError(f'ไม่สามารถเปิดกล้องได้')
 
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
@@ -46,23 +52,42 @@ class camera:
             ret, frame = self.capture.read()
             if ret:
                 with self.lock:
-                    results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
-                    
-                    for result in results:
-                        for box in result.boxes:
-                            x1, y1, x2, y2 = map(int, box.xyxy[0])
-
-                            confidence = box.conf[0]
-                            object_id = box.id[0]
-
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 2)
-
-                            frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
-                            
+                    current_time = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+                    frame = self.put_thai_text(frame, current_time, (20, 20), font_size=40, color=(255, 255, 255))
+                    if self.role == 'parking':
+                        frame = self.process_parking(frame)
+                    # elif self.role == 'entrance' or self.role == 'exit':
+                        # frame = self.process_entrance_exit(frame)
                     self.frame = frame
             else:
                 self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    def process_parking(self, frame):
+        results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
         
+        def is_parking(space, x1, y1, x2, y2):
+            return x1 <= space['x'] <= x2 and y1 <= space['y'] <= y2
+
+        occupied_spaces = set()
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                confidence = box.conf[0]
+                object_id = box.id[0]
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
+                frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
+
+                for space in self.parking_space:
+                    if is_parking(space, x1, y1, x2, y2):
+                        occupied_spaces.add(space['id'])
+
+        for space in self.parking_space:
+            color = (0, 0, 255) if space['id'] in occupied_spaces else (0, 255, 0)
+            frame = cv2.circle(frame, (space['x'], space['y']), 5, color, -1)
+
+        return frame
+
+
     def get_frame(self):
         with self.lock:
             return self.frame
@@ -101,6 +126,10 @@ class camera:
             
             if result_save_video:
                 video_writer.release()
+
+    def update_parking_space(self):
+        update_parking_space_sql = 'select * from parking_space where source = %s'
+        self.parking_space = mysql.execute_query(update_parking_space_sql, (self.source))
 
     def stop(self):
         self.running = False
