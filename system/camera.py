@@ -38,7 +38,7 @@ class camera:
         if str(source).isdigit():
             return cv2.VideoCapture(int(source))
         else:
-            return cv2.VideoCapture({source})
+            return cv2.VideoCapture(source)
 
         
     def update_frame(self):
