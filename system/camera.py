@@ -4,6 +4,8 @@ import time
 import cv2
 from ultralytics import YOLO
 import database.mysql as mysql
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 class camera:
     def __init__(self, source, name, role):
@@ -17,6 +19,7 @@ class camera:
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
             raise ValueError(f'ไม่สามารถเปิดกล้องได้')
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 100000)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.capture.set(cv2.CAP_PROP_FPS, 30)
@@ -35,14 +38,15 @@ class camera:
         if str(source).isdigit():
             return cv2.VideoCapture(int(source))
         else:
-            return cv2.VideoCapture(f'video/demo/{source}')
+            return cv2.VideoCapture({source})
+
         
     def update_frame(self):
         while self.running:
             ret, frame = self.capture.read()
             if ret:
                 with self.lock:
-                    results = self.model.track(frame, tracker="bytetrack.yaml", persist=True, conf=0.6, verbose=False)
+                    results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
                     
                     for result in results:
                         for box in result.boxes:
@@ -51,9 +55,9 @@ class camera:
                             confidence = box.conf[0]
                             object_id = box.id[0]
 
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (62, 123, 39), 2)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 2)
 
-                            cv2.putText(frame, f"ID: {object_id} Conf: {confidence:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (62, 123, 39), 2)
+                            frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
                             
                     self.frame = frame
             else:
@@ -73,7 +77,7 @@ class camera:
         while self.running:
             start_time = time.time()
             
-            filename = f'{self.name} {time.strftime("%Y-%m-%d %H-%M-%S", time.localtime(start_time))}.mp4'
+            filename = f'{self.name} {time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(start_time))}.mp4'
             
             fourcc = cv2.VideoWriter_fourcc(*'avc1')
             frame_size = (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -103,3 +107,10 @@ class camera:
         self.thread.join()
         self.record_thread.join()
         self.capture.release()
+
+    def put_thai_text(self, image, text, position, font_path='system/Pridi.ttf', font_size=20, color=(0, 0, 255)):
+        image_pil = Image.fromarray(image)
+        draw = ImageDraw.Draw(image_pil)
+        font = ImageFont.truetype(font_path, font_size)
+        draw.text(position, text, font=font, fill=color)
+        return np.array(image_pil)

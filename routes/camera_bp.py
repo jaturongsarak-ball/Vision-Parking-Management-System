@@ -111,8 +111,9 @@ def generate_frame(source):
                 b'Content-Type: text/plain\r\n\r\n' + b"Source not found!\r\n")
             return
 
-@camera_bp.route('/thumbnail/<string:source>')
-def thumbnail(source):
+@camera_bp.route('/thumbnail')
+def thumbnail():
+    source = request.args.get('source')
     frame = None
     while frame is None:
         frame = camera_list[source].get_frame()
@@ -123,13 +124,35 @@ def thumbnail(source):
             frame = buffer.tobytes()
     return Response(frame, mimetype='image/jpeg')
 
-@camera_bp.route('/live/<string:source>')
-def camera_live(source):
+@camera_bp.route('/live')
+def camera_live():
+    source = request.args.get('source')
     return Response(generate_frame(source), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@camera_bp.route('/parking_space/<string:source>')
-def camera_parking_space(source):
-    return render_template('camera_parking_space.html', source=source)
+@camera_bp.route('/parking_space')
+def camera_parking_space():
+    source = request.args.get('source')
+    fetch_parking_space_sql = 'select name, x, y, source from parking_space where source = %s'
+    result_parking_space = mysql.execute_query(fetch_parking_space_sql, (source))
+    return render_template('camera_parking_space.html', source=source, parking_space=result_parking_space)
+
+@camera_bp.route('/save_parking_space', methods=["POST"])
+def save_parking_space():
+    source = request.args.get('source')
+    data = request.get_json()
+    if data:
+        print(data)
+        delete_parking_space_sql = 'delete from parking_space where source = %s'
+        mysql.execute_query(delete_parking_space_sql, (source))
+        for parking_space in data:
+            add_parking_space = 'insert into parking_space (name, x, y, source, status) values (%s, %s, %s, %s, %s)'
+            mysql.execute_query(add_parking_space, (parking_space['name'], parking_space['x'], parking_space['y'], source, 'available'))
+        return jsonify({'status': 'success', 'message': 'บันทึกข้อมูลสำเร็จ'})
+    else:
+        delete_parking_space_sql = 'delete from parking_space where source = %s'
+        mysql.execute_query(delete_parking_space_sql, (source))
+        return jsonify({'status': 'success', 'message': 'บันทึกข้อมูลสำเร็จ'})
+
 
 @camera_bp.route('/add', methods=["POST"])
 def add_camera():
@@ -170,6 +193,9 @@ def update_camera():
                 update_camera_sql = 'update camera set name = %s, role = %s where source = %s'
                 result_update_camera = mysql.execute_query(update_camera_sql, (name, role, source))
                 if result_update_camera:
+                    if role != 'parking' and result_camera[0]['role'] == 'parking':
+                        delete_parking_space_sql = 'delete from parking_space where source = %s'
+                        mysql.execute_query(delete_parking_space_sql, (source))
                     return jsonify({'status': 'success', 'message': 'แก้ไขข้อมูลกล้องสำเร็จ'})
                 else:
                     return jsonify({'status': 'error', 'message': 'แก้ไขข้อมูลกล้องไม่สำเร็จ'})
