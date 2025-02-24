@@ -56,11 +56,24 @@ class camera:
                     frame = self.put_thai_text(frame, current_time, (20, 20), font_size=40, color=(255, 255, 255))
                     if self.role == 'parking':
                         frame = self.process_parking(frame)
-                    # elif self.role == 'entrance' or self.role == 'exit':
-                        # frame = self.process_entrance_exit(frame)
+                    elif self.role == 'entrance' or self.role == 'exit':
+                        frame = self.process_entrance_exit(frame)
                     self.frame = frame
             else:
                 self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    def process_entrance_exit(self, frame):
+        results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
+
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                confidence = box.conf[0]
+                # object_id = box.id[0]
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
+                frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
+
+        return frame
 
     def process_parking(self, frame):
         results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
@@ -73,7 +86,7 @@ class camera:
             for box in result.boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 confidence = box.conf[0]
-                object_id = box.id[0]
+                # object_id = box.id[0]
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
                 frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
 
