@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import subprocess
 import threading
 import time
 import cv2
@@ -120,12 +121,14 @@ class camera:
             start_time = time.time()
             
             filename = f'{self.name} {time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(start_time))}.mp4'
-            
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
+            input_video_path = f'{save_video_path}/before_{filename}'
+            output_video_path = f'{save_video_path}/{filename}'
+
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             frame_size = (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
                           int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-            video_writer = cv2.VideoWriter(f'{save_video_path}/{filename}', fourcc, fps, frame_size)
+            video_writer = cv2.VideoWriter(input_video_path, fourcc, fps, frame_size)
 
             while self.running:
                 frame = self.get_frame()
@@ -138,11 +141,24 @@ class camera:
 
                 time.sleep(frame_duration)
 
+            video_writer.release()
+
+            ffmpeg_cmd = [
+                "ffmpeg", "-y",
+                "-i", input_video_path,
+                "-vcodec", "libx264",
+                "-crf", "18",
+                "-preset", "slow",
+                "-pix_fmt", "yuv420p",
+                output_video_path
+            ]
+
+            subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            os.remove(input_video_path)
+
             save_video_sql = 'insert into video (file_path) values (%s)'
-            result_save_video = mysql.execute_query(save_video_sql, (f'{self.role}/{filename}'))
-            
-            if result_save_video:
-                video_writer.release()
+            mysql.execute_query(save_video_sql, (f'{self.role}/{filename}'))
 
     def update_parking_space(self):
         update_parking_space_sql = 'select * from parking_space where source = %s'
