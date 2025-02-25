@@ -192,7 +192,7 @@ def update_camera():
         fetch_camera_sql = 'select * from camera where source = %s or name = %s'
         result_camera = mysql.execute_query(fetch_camera_sql, (source, name))
         if result_camera:
-            if result_camera[0]['name'] == name and result_camera[0]['role'] == role:
+            if result_camera[0]['source'] == source and result_camera[0]['name'] == name and result_camera[0]['role'] == role:
                 return jsonify({'status': 'warning', 'message': 'ไม่มีการเปลี่ยนแปลงข้อมูล'})
             else:
                 update_camera_sql = 'update camera set name = %s, role = %s where source = %s'
