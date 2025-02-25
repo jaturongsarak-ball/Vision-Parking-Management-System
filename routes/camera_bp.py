@@ -195,8 +195,8 @@ def update_camera():
             if result_camera[0]['source'] == source and result_camera[0]['name'] == name and result_camera[0]['role'] == role:
                 return jsonify({'status': 'warning', 'message': 'ไม่มีการเปลี่ยนแปลงข้อมูล'})
             else:
-                update_camera_sql = 'update camera set name = %s, role = %s where source = %s'
-                result_update_camera = mysql.execute_query(update_camera_sql, (name, role, source))
+                update_camera_sql = 'update camera set source = %s, name = %s, role = %s where id = %s'
+                result_update_camera = mysql.execute_query(update_camera_sql, (source, name, role, result_camera[0]['id']))
                 if result_update_camera:
                     if role != 'parking' and result_camera[0]['role'] == 'parking':
                         delete_parking_space_sql = 'delete from parking_space where source = %s'
