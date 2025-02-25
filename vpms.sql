@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 23, 2025 at 07:56 AM
+-- Generation Time: Feb 25, 2025 at 01:24 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -34,15 +34,6 @@ CREATE TABLE `camera` (
   `role` enum('parking','entrance','exit') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `camera`
---
-
-INSERT INTO `camera` (`id`, `source`, `name`, `role`) VALUES
-(29, 'http://192.168.2.48:4000/stream/parking_1.mp4', 'กล้องตัวที่ 1', 'parking'),
-(31, 'http://192.168.2.48:4000/stream/parking_2.mp4', 'กล้องตัวที่ 2', 'parking'),
-(32, 'http://192.168.2.48:4000/stream/parking_3.mp4', 'กล้องตัวที่ 3', 'parking');
-
 -- --------------------------------------------------------
 
 --
@@ -68,25 +59,6 @@ CREATE TABLE `video` (
   `id` int(11) NOT NULL,
   `file_path` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `video`
---
-
-INSERT INTO `video` (`id`, `file_path`) VALUES
-(1227, 'parking/ทดสอบ 2025-02-23 12-26-54.mp4'),
-(1228, 'parking/ทดสอบ 2025-02-23 12-30-28.mp4'),
-(1229, 'parking/ทดสอบ 2025-02-23 12-34-33.mp4'),
-(1230, 'parking/ทดสอบ 2025-02-23 13-11-03.mp4'),
-(1231, 'parking/กล้องตัวที่ 2 2025-02-23 13-11-06.mp4'),
-(1232, 'exit/กล้องตัวที่ 1 2025-02-23 13-11-07.mp4'),
-(1233, 'parking/กล้องตัวที่ 3 2025-02-23 13-11-09.mp4'),
-(1234, 'parking/กล้องตัวที่ 2 2025-02-23 13-16-06.mp4'),
-(1235, 'exit/กล้องตัวที่ 1 2025-02-23 13-16-08.mp4'),
-(1236, 'parking/กล้องตัวที่ 3 2025-02-23 13-16-09.mp4'),
-(1237, 'parking/ทดสอบ 2025-02-23 13-15-13.mp4'),
-(1238, 'parking/ทดสอบ 2025-02-23 13-22-51.mp4'),
-(1239, 'parking/ทดสอบ 2025-02-23 13-25-25.mp4');
 
 --
 -- Indexes for dumped tables
@@ -120,19 +92,19 @@ ALTER TABLE `video`
 -- AUTO_INCREMENT for table `camera`
 --
 ALTER TABLE `camera`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `parking_space`
 --
 ALTER TABLE `parking_space`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `video`
 --
 ALTER TABLE `video`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1240;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -142,7 +114,7 @@ ALTER TABLE `video`
 -- Constraints for table `parking_space`
 --
 ALTER TABLE `parking_space`
-  ADD CONSTRAINT `source_fk` FOREIGN KEY (`source`) REFERENCES `camera` (`source`) ON DELETE CASCADE;
+  ADD CONSTRAINT `source_fk` FOREIGN KEY (`source`) REFERENCES `camera` (`source`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
