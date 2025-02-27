@@ -26,10 +26,10 @@ class camera:
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
             raise ValueError(f'ไม่สามารถเปิดกล้องได้')
-        # self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 100)
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        self.capture.set(cv2.CAP_PROP_FPS, 30)
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 10)
+        # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        # self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        # self.capture.set(cv2.CAP_PROP_FPS, 30)
         
         self.frame = None
         self.running = True
@@ -53,8 +53,6 @@ class camera:
             ret, frame = self.capture.read()
             if ret:
                 with self.lock:
-                    current_time = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
-                    frame = self.put_thai_text(frame, current_time, (20, 20), font_size=40, color=(255, 255, 255))
                     if self.role == 'parking':
                         frame = self.process_parking(frame)
                     elif self.role == 'entrance' or self.role == 'exit':
@@ -114,8 +112,9 @@ class camera:
         save_video_path = f'video/{self.role}'
         os.makedirs(save_video_path, exist_ok=True)
 
-        fps = 30
+        fps = fps = self.capture.get(cv2.CAP_PROP_FPS)
         frame_duration = 1 / fps
+        video__duration = 300
 
         while self.running:
             start_time = time.time()
@@ -136,7 +135,7 @@ class camera:
                     video_writer.write(frame)
 
                 elapsed_time = time.time() - start_time
-                if elapsed_time >= 300:
+                if elapsed_time >= video__duration:
                     break
 
                 time.sleep(frame_duration)
