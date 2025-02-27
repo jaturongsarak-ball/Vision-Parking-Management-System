@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import re
 import subprocess
 import threading
 import time
@@ -8,6 +9,7 @@ from ultralytics import YOLO
 import database.mysql as mysql
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import easyocr
 
 class camera:
     def __init__(self, source, name, role):
@@ -15,6 +17,11 @@ class camera:
         self.name = name
         self.role = role
         self.parking_space = None
+
+        self.capture = self.open_camera(source)
+        if not self.capture.isOpened():
+            raise ValueError(f'ไม่สามารถเปิดกล้องได้')
+
         if role == 'parking':
             self.model = YOLO('system/car_model.pt', verbose=False)
             self.update_parking_space()
@@ -23,10 +30,9 @@ class camera:
         else:
             raise ValueError(f'ไม่สามารถเปิดกล้องได้')
 
-        self.capture = self.open_camera(source)
-        if not self.capture.isOpened():
-            raise ValueError(f'ไม่สามารถเปิดกล้องได้')
-        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 10)
+        self.reader = easyocr.Reader(['th', 'en'])
+
+        # self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 10)
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         # self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         # self.capture.set(cv2.CAP_PROP_FPS, 30)
@@ -49,17 +55,27 @@ class camera:
 
         
     def update_frame(self):
+        last_time = time.time()
+        min_interval = 0.2
         while self.running:
-            ret, frame = self.capture.read()
-            if ret:
-                with self.lock:
-                    if self.role == 'parking':
-                        frame = self.process_parking(frame)
-                    elif self.role == 'entrance' or self.role == 'exit':
-                        frame = self.process_entrance_exit(frame)
-                    self.frame = frame
+            current_time = time.time()
+            elapsed_time = current_time - last_time
+            if elapsed_time >= min_interval:
+                ret, frame = self.capture.read()
+                if ret:
+                    with self.lock:
+                        vieo_time = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+                        frame = self.put_thai_text(frame, vieo_time, (20, 20), font_size=40, color=(255, 255, 255))
+                        if self.role == 'parking':
+                            frame = self.process_parking(frame)
+                        elif self.role == 'entrance' or self.role == 'exit':
+                            frame = self.process_entrance_exit(frame)
+                        self.frame = frame
+                else:
+                    self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                last_time = time.time()
             else:
-                self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                time.sleep(min_interval - elapsed_time)
 
     def process_entrance_exit(self, frame):
         results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
@@ -69,8 +85,20 @@ class camera:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 confidence = box.conf[0]
                 # object_id = box.id[0]
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
-                frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
+                cropped_img = frame[y1:y2, x1:x2]
+                ocr_results = self.reader.readtext(cropped_img)
+                license_plate_text = ''
+
+                if ocr_results:
+                    for (bbox, text, ocr_conf) in ocr_results:
+                        if ocr_conf >= 0.5:
+                            license_plate_text += ''.join(re.findall(r'[ก-ฮ๐-๙a-zA-Z0-9]', text)) + " "
+
+                if license_plate_text:
+                    frame = self.put_thai_text(frame, license_plate_text, (x1, y1  - 25), color=(255, 255, 255))
+
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                # frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
 
         return frame
 
@@ -86,8 +114,8 @@ class camera:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 confidence = box.conf[0]
                 # object_id = box.id[0]
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
-                frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                # frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
 
                 for space in self.parking_space:
                     if is_parking(space, x1, y1, x2, y2):
@@ -112,7 +140,7 @@ class camera:
         save_video_path = f'video/{self.role}'
         os.makedirs(save_video_path, exist_ok=True)
 
-        fps = fps = self.capture.get(cv2.CAP_PROP_FPS)
+        fps =  5
         frame_duration = 1 / fps
         video__duration = 300
 
@@ -120,7 +148,7 @@ class camera:
             start_time = time.time()
             
             filename = f'{self.name} {time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(start_time))}.mp4'
-            input_video_path = f'{save_video_path}/before_{filename}'
+            input_video_path = f'{save_video_path}/temp_{filename}'
             output_video_path = f'{save_video_path}/{filename}'
 
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
