@@ -1,3 +1,4 @@
+import time
 import cv2
 from flask import Blueprint, Response, jsonify, render_template, request
 from system.camera import camera as camera_class
@@ -90,6 +91,7 @@ def generate_frame(source):
                b'Content-Type: text/plain\r\n\r\n' + b"Source not found!\r\n")
         return
     while True:
+        time.sleep(0.03)
         try:
             frame = camera_list[source].get_frame()
             if frame is None:
