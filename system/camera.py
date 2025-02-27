@@ -21,6 +21,7 @@ class camera:
         self.capture = self.open_camera(source)
         if not self.capture.isOpened():
             raise ValueError(f'ไม่สามารถเปิดกล้องได้')
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1000000)
 
         if role == 'parking':
             self.model = YOLO('system/car_model.pt', verbose=False)
@@ -32,7 +33,6 @@ class camera:
 
         self.reader = easyocr.Reader(['th', 'en'])
 
-        # self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 10)
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         # self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         # self.capture.set(cv2.CAP_PROP_FPS, 30)
@@ -55,27 +55,22 @@ class camera:
 
         
     def update_frame(self):
-        last_time = time.time()
-        min_interval = 0.2
         while self.running:
-            current_time = time.time()
-            elapsed_time = current_time - last_time
-            if elapsed_time >= min_interval:
-                ret, frame = self.capture.read()
-                if ret:
-                    with self.lock:
-                        vieo_time = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
-                        frame = self.put_thai_text(frame, vieo_time, (20, 20), font_size=40, color=(255, 255, 255))
-                        if self.role == 'parking':
-                            frame = self.process_parking(frame)
-                        elif self.role == 'entrance' or self.role == 'exit':
-                            frame = self.process_entrance_exit(frame)
-                        self.frame = frame
-                else:
-                    self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                last_time = time.time()
+            ret, frame = self.capture.read()
+            if ret:
+                with self.lock:
+                    vieo_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    frame = self.put_thai_text(frame, vieo_time, (20, 20), font_size=40, color=(255, 255, 255))
+                    if self.role == 'parking':
+                        frame = self.process_parking(frame)
+                    elif self.role == 'entrance' or self.role == 'exit':
+                        frame = self.process_entrance_exit(frame)
+                    self.frame = frame
             else:
-                time.sleep(min_interval - elapsed_time)
+                self.capture.release()
+                time.sleep(1)
+                self.capture = self.open_camera(self.source)
+                self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1000000)
 
     def process_entrance_exit(self, frame):
         results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
@@ -91,7 +86,7 @@ class camera:
 
                 if ocr_results:
                     for (bbox, text, ocr_conf) in ocr_results:
-                        if ocr_conf >= 0.5:
+                        if ocr_conf >= 0.7:
                             license_plate_text += ''.join(re.findall(r'[ก-ฮ๐-๙a-zA-Z0-9]', text)) + " "
 
                 if license_plate_text:
@@ -140,7 +135,7 @@ class camera:
         save_video_path = f'video/{self.role}'
         os.makedirs(save_video_path, exist_ok=True)
 
-        fps =  5
+        fps =  10
         frame_duration = 1 / fps
         video__duration = 300
 
@@ -176,7 +171,6 @@ class camera:
                 "-vcodec", "libx264",
                 "-crf", "18",
                 "-preset", "slow",
-                "-pix_fmt", "yuv420p",
                 output_video_path
             ]
 
