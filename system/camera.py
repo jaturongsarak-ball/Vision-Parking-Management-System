@@ -50,7 +50,6 @@ class camera:
         else:
             if 'rtsp' in source:
                 url = f'http://localhost:4000/?rtsp_url={source}'
-                print('url', url)
                 cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
             else:
                 cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
@@ -89,7 +88,7 @@ class camera:
                 if obj_id:
                     active_obj_ids.add(obj_id)
                     if obj_id in self.object_positions:
-                        prev_x, prev_y, old_frame, old_datetime = self.object_positions[obj_id]
+                        prev_x, prev_y, old_frame = self.object_positions[obj_id]
                         movement = np.linalg.norm([center_x - prev_x, center_y - prev_y])
                         if movement < 0.5:
                             cropped_img = frame[y1:y2, x1:x2]
@@ -105,29 +104,50 @@ class camera:
                                             self.current_obj_ocr[obj_id].append(license_plate_text)
                                 
                                 color = (0, 0, 255)
-                        self.object_positions[obj_id] = (center_x, center_y, old_frame, old_datetime)
+                        self.object_positions[obj_id] = (center_x, center_y, old_frame)
                     else:
-                        datetime_ = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-                        self.object_positions[obj_id] = (center_x, center_y, frame, datetime_)
+                        self.object_positions[obj_id] = (center_x, center_y, frame)
                     frame = self.put_thai_text(frame, f'{license_plate_text}', (x1, y1  - 45), color=(255, 255, 255))
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            
-        for obj_id in list(self.object_positions.keys()):
-            if obj_id not in active_obj_ids:
-                del self.object_positions[obj_id]
+
         for obj_id in list(self.current_obj_ocr.keys()):
             if obj_id not in active_obj_ids:
                 ocr_texts = self.current_obj_ocr[obj_id]
                 if ocr_texts:
                     text_counter = Counter(ocr_texts)
                     most_common_text, count = text_counter.most_common(1)[0]
-                    print(f'ข้อความที่พบบ่อยที่สุด ({count} ครั้ง): {most_common_text}')
+                    _, _, old_frame = self.object_positions[obj_id]
+                    datetime_crop = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+                    most_common_text = most_common_text.replace(' ', '')
+                    os.makedirs(f'image/{self.role}', exist_ok=True)
+                    image_filename = f'{most_common_text} {datetime_crop}.jpg'
+
+                    if self.role == 'entrance':
+                        check_parking_stat_sql = 'select * from parking_stat where plate_number = %s and datetime_exit is null'
+                        check_parking_stat = mysql.execute_query(check_parking_stat_sql, (most_common_text))
+                        if not check_parking_stat:
+                            parking_stat_insert_sql = 'insert into parking_stat (plate_number, 	image_entrance, datetime_entrance) values (%s, %s, %s)'
+                            result_insert = mysql.execute_query(parking_stat_insert_sql, (most_common_text, image_filename, datetime_crop))
+                            if result_insert:
+                                cv2.imwrite(f'image/{self.role}/{image_filename}', old_frame)
+                    if self.role == 'exit':
+                        check_parking_stat_sql = 'select * from parking_stat where plate_number = %s and datetime_exit is null'
+                        check_parking_stat = mysql.execute_query(check_parking_stat_sql, (most_common_text))
+                        if check_parking_stat:
+                            parking_stat_update_sql = 'update parking_stat set image_exit = %s, datetime_exit = %s where plate_number = %s and datetime_exit is null'
+                            result_update = mysql.execute_query(parking_stat_update_sql, (image_filename, datetime_crop, most_common_text))   
+                            if result_update:
+                                cv2.imwrite(f'image/{self.role}/{image_filename}', old_frame)
+
                 del self.current_obj_ocr[obj_id]
+
+        for obj_id in list(self.object_positions.keys()):
+            if obj_id not in active_obj_ids:
+                del self.object_positions[obj_id]
 
         return frame
 
     def process_parking(self, frame):
-        # results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
         results = self.model.predict(frame, conf=0.6, verbose=False)
 
         def is_parking(space, x1, y1, x2, y2):
@@ -137,11 +157,7 @@ class camera:
         for result in results:
             for box in result.boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
-                confidence = box.conf[0]
-                # if box.id:
-                #     object_id = box.id[0]
-                # frame = self.put_thai_text(frame, f'{confidence*100:.2f}%', (x1, y1 - 25), color=(255, 255, 255))
-                
+
                 color = (0, 255, 0)
 
                 for space in self.parking_space:
