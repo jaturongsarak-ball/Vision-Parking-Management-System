@@ -29,7 +29,7 @@ def check_file():
                     except Exception as e:
                         continue
 
-@parking_stat_bp.route('/', methods=['POST', 'GET'])
+@parking_stat_bp.route('/')
 def parking_stat():
     check_file()
         
@@ -80,7 +80,51 @@ def parking_stat():
     start_page = max(1, page - 4)
     end_page = min(total_pages, start_page + 9)
 
-    return render_template('parking_stat.html', parking_data=result_parking_stat, page=page, total_pages=total_pages, start_page=start_page, end_page=end_page)
+    fetch_stat = '''select count(*) as total_cars,
+                        ROUND(avg(TIMESTAMPDIFF(MINUTE, datetime_entrance, datetime_exit)), 0) AS avg_parking_duration,
+                        ROUND(max(TIMESTAMPDIFF(MINUTE, datetime_entrance, datetime_exit)), 0) AS max_parking_duration,
+                        ROUND(min(TIMESTAMPDIFF(MINUTE, datetime_entrance, datetime_exit)), 0) AS min_parking_duration
+                    from parking_stat where 1=1'''
+    
+    params = []
+
+    if date_start:
+        fetch_stat += ' and datetime_entrance >= %s'
+        params.append(f'{date_start} 00:00:00')
+
+    if date_end:
+        fetch_stat += ' and datetime_entrance <= %s'
+        params.append(f'{date_end} 23:59:59')
+
+    parking_stat_result = mysql.execute_query(fetch_stat, params)
+
+    time_slots_sql = '''select hour(datetime_entrance) as hour,
+                            count(*) as cars_in_hour
+                        from parking_stat where 1=1'''
+    
+    params = []
+
+    if date_start:
+        time_slots_sql += ' and datetime_entrance >= %s'
+        params.append(f'{date_start} 00:00:00')
+
+    if date_end:
+        time_slots_sql += ' and datetime_entrance <= %s'
+        params.append(f'{date_end} 23:59:59')
+
+    time_slots_sql += ' group by hour(datetime_entrance) order by hour'
+    time_slots_result = mysql.execute_query(time_slots_sql, params)
+
+    print(time_slots_result)
+    print (parking_stat_result)
+
+    return render_template('parking_stat.html',
+                            parking_data=result_parking_stat if result_parking_stat else [],
+                            time_slots=time_slots_result if time_slots_result else [],
+                            parking_stat=parking_stat_result[0] if parking_stat_result else {},
+                            page=page, total_pages=total_pages,
+                            start_page=start_page,
+                            end_page=end_page)
 
 @parking_stat_bp.route('/get_image', methods=['GET'])
 def get_image():
