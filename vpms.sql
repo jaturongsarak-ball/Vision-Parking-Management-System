@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 25, 2025 at 01:24 PM
+-- Generation Time: Mar 01, 2025 at 08:28 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `camera` (
   `id` int(11) NOT NULL,
   `source` varchar(100) NOT NULL,
-  `name` varchar(100) NOT NULL,
+  `name` varchar(70) NOT NULL,
   `role` enum('parking','entrance','exit') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -47,6 +47,21 @@ CREATE TABLE `parking_space` (
   `x` int(11) NOT NULL,
   `y` int(11) NOT NULL,
   `source` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `parking_stat`
+--
+
+CREATE TABLE `parking_stat` (
+  `id` int(11) NOT NULL,
+  `plate_number` varchar(50) NOT NULL,
+  `image_entrance` varchar(100) DEFAULT NULL,
+  `image_exit` varchar(100) DEFAULT NULL,
+  `datetime_entrance` datetime DEFAULT NULL,
+  `datetime_exit` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -79,6 +94,12 @@ ALTER TABLE `parking_space`
   ADD KEY `source_fk` (`source`);
 
 --
+-- Indexes for table `parking_stat`
+--
+ALTER TABLE `parking_stat`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `video`
 --
 ALTER TABLE `video`
@@ -98,6 +119,12 @@ ALTER TABLE `camera`
 -- AUTO_INCREMENT for table `parking_space`
 --
 ALTER TABLE `parking_space`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `parking_stat`
+--
+ALTER TABLE `parking_stat`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
