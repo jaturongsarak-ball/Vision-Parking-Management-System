@@ -42,10 +42,10 @@ def check_file():
                     except Exception as e:
                         continue
 
-check_file()
-
 @video_bp.route('/')
 def search_videos():
+    check_file()
+    
     role = request.args.get('role', 'all')
     name = request.args.get('name', '')
     date = request.args.get('date', '')

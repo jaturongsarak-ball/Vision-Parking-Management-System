@@ -57,7 +57,11 @@ class camera:
 
         
     def update_frame(self):
+        target_fps = 30
+        frame_time = 1.0 / target_fps
         while self.running:
+            start_time = time.time()
+
             ret, frame = self.capture.read()
             if ret:
                 if self.role == 'parking':
@@ -72,6 +76,10 @@ class camera:
             else:
                 self.capture.release()
                 self.capture = self.open_camera(self.source)
+
+            elapsed_time = time.time() - start_time
+            sleep_time = max(0, frame_time - elapsed_time)
+            time.sleep(sleep_time)
 
     def process_entrance_exit(self, frame):
         results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
@@ -186,7 +194,7 @@ class camera:
         save_video_path = f'video/{self.role}'
         os.makedirs(save_video_path, exist_ok=True)
 
-        fps =  10
+        fps =  30
         frame_duration = 1 / fps
         video__duration = 300
 
@@ -204,6 +212,7 @@ class camera:
             video_writer = cv2.VideoWriter(input_video_path, fourcc, fps, frame_size)
 
             while self.running:
+                start_time_ = time.time()
                 frame = self.get_frame()
                 if frame is not None:
                     video_writer.write(frame)
@@ -211,8 +220,10 @@ class camera:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= video__duration:
                     break
-
-                time.sleep(frame_duration)
+                else:
+                    elapsed_time_ = time.time() - start_time_
+                    sleep_time = max(0, frame_duration - elapsed_time_)
+                    time.sleep(sleep_time)
 
             video_writer.release()
 
