@@ -98,7 +98,7 @@ class camera:
                     if obj_id in self.object_positions:
                         prev_x, prev_y, old_frame = self.object_positions[obj_id]
                         movement = np.linalg.norm([center_x - prev_x, center_y - prev_y])
-                        if movement < 0.5:
+                        if movement < 1:
                             cropped_img = frame[y1:y2, x1:x2]
                             gray_cropped_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
                             ocr_results = self.reader.readtext(gray_cropped_img)
@@ -202,14 +202,14 @@ class camera:
             start_time = time.time()
             
             filename = f'{self.name} {time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(start_time))}.mp4'
-            input_video_path = f'{save_video_path}/temp_{filename}'
             output_video_path = f'{save_video_path}/{filename}'
 
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
+
             frame_size = (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
                           int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-            video_writer = cv2.VideoWriter(input_video_path, fourcc, fps, frame_size)
+            video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, frame_size)
 
             while self.running:
                 start_time_ = time.time()
@@ -226,19 +226,6 @@ class camera:
                     time.sleep(sleep_time)
 
             video_writer.release()
-
-            ffmpeg_cmd = [
-                "ffmpeg", "-y",
-                "-i", input_video_path,
-                "-vcodec", "libx264",
-                "-crf", "18",
-                "-preset", "slow",
-                output_video_path
-            ]
-
-            subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            os.remove(input_video_path)
 
             save_video_sql = 'insert into video (file_path) values (%s)'
             mysql.execute_query(save_video_sql, (f'{self.role}/{filename}'))

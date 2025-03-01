@@ -35,6 +35,7 @@
                         <tr>
                             <th class="align-middle">ภาพทางเข้า</th>
                             <th class="align-middle">ภาพทางออก</th>
+                            <th class="align-middle">หมายเลขป้ายทะเบียน</th>
                             <th class="align-middle">วันเวลาเข้า</th>
                             <th class="align-middle">วันเวลาออก</th>
                         </tr>
@@ -63,6 +64,9 @@
                                     data-bs-target="#imageModal"
                                     onclick="openImageModalWithDetails('{{ parking_stat.image_exit }}', '/parking_stat/get_image?path=image/exit/{{ parking_stat.image_exit }}')">
                                 {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                    {{ parking_stat.plate_number }}
                             </td>
                             <td class="align-middle">
                                 {% if parking_stat.datetime_entrance %}
