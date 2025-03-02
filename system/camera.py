@@ -48,11 +48,12 @@ class camera:
         if str(source).isdigit():
             cap = cv2.VideoCapture(int(source))
         else:
-            if 'rtsp' in source:
-                url = f'http://localhost:4000/?rtsp_url={source}'
-                cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-            else:
-                cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+                "rtsp_transport;tcp|timeout;5000|max_delay;0|fflags;nobuffer|flags;low_delay"
+                "|probesize;1000000|analyzeduration;500000|thread_queue_size;1024|framedrop;1|skip_frame;nonref"
+                "|flags2;showall|sync;ext|avioflags;direct|reorder_queue_size;0"
+            )
+            cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
         return cap
 
         
@@ -64,6 +65,7 @@ class camera:
 
             ret, frame = self.capture.read()
             if ret:
+                frame = cv2.resize(frame, (1280, 720))
                 if self.role == 'parking':
                     frame = self.process_parking(frame)
                 elif self.role == 'entrance' or self.role == 'exit':
@@ -206,10 +208,7 @@ class camera:
 
             fourcc = cv2.VideoWriter_fourcc(*'avc1')
 
-            frame_size = (int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                          int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-
-            video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, frame_size)
+            video_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (1280, 720))
 
             while self.running:
                 start_time_ = time.time()
