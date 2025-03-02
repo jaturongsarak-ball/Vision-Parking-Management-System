@@ -115,9 +115,6 @@ def parking_stat():
     time_slots_sql += ' group by hour(datetime_entrance) order by hour'
     time_slots_result = mysql.execute_query(time_slots_sql, params)
 
-    print(time_slots_result)
-    print (parking_stat_result)
-
     return render_template('parking_stat.html',
                             parking_data=result_parking_stat if result_parking_stat else [],
                             time_slots=time_slots_result if time_slots_result else [],
