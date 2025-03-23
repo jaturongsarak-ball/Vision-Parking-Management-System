@@ -7,18 +7,47 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarToggler">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                {% if session['username'] and session['role'] == 'admin' %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('parking_bp.parking_index') }}">สถานะที่จอดรถ</a>
+                    <a class="nav-link" href="{{ url_for('home_bp.home') }}">สถานะที่จอดรถ</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('parking_stat_bp.parking_stat') }}">สถิติการใช้งาน</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('video_bp.search_videos') }}">วิดีโอ</a>
+                    <a class="nav-link" href="{{ url_for('video_bp.search_videos', function='all') }}">วีดีโอ</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('camera_bp.camera_index') }}">ตั้งค่ากล้อง</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('account_bp.edit') }}">บัญชีผู้ใช้งาน</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth_bp.logout') }}">ออกจากระบบ</a>
+                </li>
+                {% elif session['username'] and session['role'] == 'user' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home_bp.home') }}">สถานะที่จอดรถ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('account_bp.edit') }}">บัญชีผู้ใช้งาน</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth_bp.logout') }}">ออกจากระบบ</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home_bp.home') }}">สถานะที่จอดรถ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth_bp.login') }}">เข้าสู่ระบบ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth_bp.signup') }}">สมัครสมาชิก</a>
+                </li>
+                {% endif %}           
             </ul>
         </div>
     </div>

@@ -1,6 +1,7 @@
 import time
 import cv2
 from flask import Blueprint, Response, jsonify, render_template, request
+from routes.auth_bp import admin_required, login_required
 from system.camera import camera as camera_class
 import database.mysql as mysql
 
@@ -9,6 +10,8 @@ camera_bp = Blueprint('camera_bp', __name__)
 camera_list = {}
 
 @camera_bp.route('/')
+@login_required
+@admin_required
 def camera_index():
     fetch_camera_sql = 'select * from camera'
     result_camera = mysql.execute_query(fetch_camera_sql)
@@ -23,6 +26,8 @@ def camera_index():
         return render_template('camera.html', camera_data = [])
 
 @camera_bp.route('/toggle', methods=["POST"])
+@login_required
+@admin_required
 def toggle_camera():
     data = request.get_json()
     source = data.get("source")
@@ -50,6 +55,8 @@ def toggle_camera():
         return jsonify({'status': 'error', 'message': 'ข้อมูลกล้องไม่ถูกต้อง'})
 
 @camera_bp.route('/toggle_all', methods=["POST"])
+@login_required
+@admin_required
 def toggle_all_camera():
     data = request.get_json()
     action = data.get("action")
@@ -91,7 +98,7 @@ def generate_frame(source):
                b'Content-Type: text/plain\r\n\r\n' + b"Source not found!\r\n")
         return
     while True:
-        time.sleep(0.03)
+        time.sleep(1/15)
         try:
             frame = camera_list[source].get_frame()
             if frame is None:
@@ -113,6 +120,8 @@ def generate_frame(source):
             return
 
 @camera_bp.route('/thumbnail')
+@login_required
+@admin_required
 def thumbnail():
     source = request.args.get('source')
     frame = None
@@ -126,16 +135,22 @@ def thumbnail():
     return Response(frame, mimetype='image/jpeg')
 
 @camera_bp.route('/live')
+@login_required
+@admin_required
 def camera_live():
     source = request.args.get('source')
     return Response(generate_frame(source), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @camera_bp.route('/parking_stream_live')
+@login_required
+@admin_required
 def camera_stream_live():
     source = request.args.get('source')
     return render_template('camera_live.html', source=source)
 
 @camera_bp.route('/parking_space')
+@login_required
+@admin_required
 def camera_parking_space():
     source = request.args.get('source')
     fetch_parking_space_sql = 'select name, x, y, source from parking_space where source = %s'
@@ -143,9 +158,14 @@ def camera_parking_space():
     return render_template('camera_parking_space.html', source=source, parking_space=result_parking_space)
 
 @camera_bp.route('/save_parking_space', methods=["POST"])
+@login_required
+@admin_required
 def save_parking_space():
-    source = request.args.get('source')
+    # source = request.args.get('source')
+    # print('source', source)
     data = request.get_json()
+    for parking_space in data:
+        source = parking_space['source']
     if data:
         delete_parking_space_sql = 'delete from parking_space where source = %s'
         mysql.execute_query(delete_parking_space_sql, (source))
@@ -162,6 +182,8 @@ def save_parking_space():
 
 
 @camera_bp.route('/add', methods=["POST"])
+@login_required
+@admin_required
 def add_camera():
     data = request.get_json()
     source = data.get('source')
@@ -184,6 +206,8 @@ def add_camera():
         return jsonify({'status': 'error', 'message': 'เกิดข้อผิดพลาดในการเพิ่มกล้อง'})
 
 @camera_bp.route('/update', methods=["POST"])
+@login_required
+@admin_required
 def update_camera():
     data = request.get_json()
     source = data.get('source')
@@ -212,6 +236,8 @@ def update_camera():
         return jsonify({'status': 'error', 'message': 'เกิดข้อผิดพลาด'})
 
 @camera_bp.route('/delete', methods=["POST"])
+@login_required
+@admin_required
 def delete_camera():
     data = request.get_json()
     source = data.get('source')

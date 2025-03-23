@@ -48,17 +48,16 @@ class camera:
         if str(source).isdigit():
             cap = cv2.VideoCapture(int(source))
         else:
-            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
-                "rtsp_transport;tcp|timeout;5000|max_delay;0|fflags;nobuffer|flags;low_delay"
-                "|probesize;1000000|analyzeduration;500000|thread_queue_size;1024|framedrop;1|skip_frame;nonref"
-                "|flags2;showall|sync;ext|avioflags;direct|reorder_queue_size;0"
-            )
+            # os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+            #     "rtsp_transport;tcp|timeout;50000|max_delay;0|fflags;nobuffer|flags;low_delay"
+            #     "|probesize;1000000|analyzeduration;500000|thread_queue_size;1024|framedrop;1|skip_frame;nonref"
+            #     "|flags2;showall|sync;ext|avioflags;direct|reorder_queue_size;0"
+            # )
             cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
         return cap
-
         
     def update_frame(self):
-        target_fps = 30
+        target_fps = 15
         frame_time = 1.0 / target_fps
         while self.running:
             start_time = time.time()
@@ -71,20 +70,32 @@ class camera:
                 elif self.role == 'entrance' or self.role == 'exit':
                     frame = self.process_entrance_exit(frame)
 
-                vieo_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-                frame = self.put_thai_text(frame, vieo_time, (20, 20), color=(255, 255, 255))
+                # vieo_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                # frame = self.put_thai_text(frame, vieo_time, (20, 20), color=(255, 255, 255))
                 
                 self.frame = frame
             else:
-                self.capture.release()
-                self.capture = self.open_camera(self.source)
+                # self.capture.release()
+                # self.capture = self.open_camera(self.source)
+                self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                # time.sleep(0.5)
 
             elapsed_time = time.time() - start_time
             sleep_time = max(0, frame_time - elapsed_time)
-            time.sleep(sleep_time)
+            # time.sleep(sleep_time)
 
     def process_entrance_exit(self, frame):
-        results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
+
+        if self.role == 'entrance': 
+            height, width, _ = frame.shape
+            margin = int(width * 0.3)
+            mask = np.zeros((height, width), dtype=np.uint8)
+            mask[:, margin:width - margin] = 255
+            frame_masked = cv2.bitwise_and(frame, frame, mask=mask)
+            results = self.model.track(frame_masked, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
+        elif self.role == 'exit':
+            results = self.model.track(frame, tracker='bytetrack.yaml', persist=True, conf=0.6, verbose=False)
+
         active_obj_ids = set()
         for result in results:
             for box in result.boxes:
@@ -100,7 +111,7 @@ class camera:
                     if obj_id in self.object_positions:
                         prev_x, prev_y, old_frame = self.object_positions[obj_id]
                         movement = np.linalg.norm([center_x - prev_x, center_y - prev_y])
-                        if movement < 1:
+                        if movement < 30:
                             cropped_img = frame[y1:y2, x1:x2]
                             gray_cropped_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
                             ocr_results = self.reader.readtext(gray_cropped_img)
@@ -112,8 +123,11 @@ class camera:
                                             self.current_obj_ocr[obj_id] = []
                                         if (obj_id in self.current_obj_ocr) and (license_plate_text):
                                             self.current_obj_ocr[obj_id].append(license_plate_text)
-                                
-                                color = (0, 0, 255)
+                            else:
+                                if (obj_id not in self.current_obj_ocr):
+                                    self.current_obj_ocr[obj_id] = []
+
+                        color = (0, 0, 255)
                         self.object_positions[obj_id] = (center_x, center_y, old_frame)
                     else:
                         self.object_positions[obj_id] = (center_x, center_y, frame)
@@ -148,6 +162,17 @@ class camera:
                             result_update = mysql.execute_query(parking_stat_update_sql, (image_filename, datetime_crop, most_common_text))   
                             if result_update:
                                 cv2.imwrite(f'image/{self.role}/{image_filename}', old_frame)
+                else:
+                    datetime_crop = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+                    os.makedirs(f'image/{self.role}', exist_ok=True)
+                    image_filename = f'{datetime_crop}.jpg'
+                    _, _, old_frame = self.object_positions[obj_id]
+
+                    if self.role == 'entrance':
+                        parking_stat_insert_sql = 'insert into parking_stat (image_entrance, datetime_entrance) values (%s, %s)'
+                        result_insert = mysql.execute_query(parking_stat_insert_sql, (image_filename, datetime_crop))
+                        if result_insert:
+                            cv2.imwrite(f'image/{self.role}/{image_filename}', old_frame)
 
                 del self.current_obj_ocr[obj_id]
 
@@ -196,7 +221,7 @@ class camera:
         save_video_path = f'video/{self.role}'
         os.makedirs(save_video_path, exist_ok=True)
 
-        fps =  30
+        fps =  15
         frame_duration = 1 / fps
         video__duration = 300
 

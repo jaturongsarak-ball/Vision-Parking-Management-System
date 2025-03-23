@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Edit Account
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <form>
+        {% include "alert.html" %}
+        <div class="form-group mb-3">
+            <label for="role_name" class="form-label">สิทธิ์</label>
+            <input type="text" class="form-control" id="role_name" value="{{ user.role }}" disabled>
+        </div>
+        <div class="form-group mb-3">
+            <label for="username" class="form-label">ชื่อผู้ใช้งาน</label>
+            <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
+        </div>
+        <div class="form-group mb-3">
+            <label for="password" class="form-label">รหัสผ่านใหม่</label>
+            <input type="password" class="form-control" id="password" placeholder="กรอกรหัสผ่านใหม่" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="confirm_password" class="form-label">ยืนยันรหัสผ่าน</label>
+            <input type="password" class="form-control" id="confirm_password" placeholder="กรอกรหัสผ่านอีกครั้ง" required>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-primary" onclick="handleUpdate()">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+    </form>
+</div>
+<script>
+    async function handleUpdate() {
+        const user_id = {{ user.id }};
+        const password = document.getElementById('password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+
+        if (password.trim() === '' || confirm_password.trim() === '') {
+            showMessage('warning', 'กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+
+        if (password !== confirm_password) {
+            showMessage('warning', 'รหัสผ่านไม่ตรงกัน');
+            return;
+        }
+
+        const params = { user_id, password };
+        console.log(params);
+
+        const response = await connect('POST', '/account/edit', params);
+        if (response.status === 'success') {
+            showMessage(response.status, response.message);
+            location.reload();
+        } else if (response.status === 'error') {
+            showMessage(response.status, response.message);
+        }
+    }
+</script>
+{% endblock %}

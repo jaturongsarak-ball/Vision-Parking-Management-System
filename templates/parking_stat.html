@@ -37,14 +37,22 @@
                             <p class="h5">จำนวนรถที่เข้ามา : <strong>{{ parking_stat.total_cars }}</strong> คัน</p>
                         </div>
                         <div class="col-12 mb-2">
-                            <p class="h5">เวลาเฉลี่ยในการใช้งาน : <strong>{{ parking_stat.avg_parking_duration }}</strong> นาที</p>
-                        </div>
+                            <p class="h5">เวลาเฉลี่ยในการใช้งาน : 
+                                <strong>{{ parking_stat.avg_parking_duration if parking_stat.avg_parking_duration is not none else "ไม่พบข้อมูล" }}</strong>
+                            </p>
+                        </div>                        
                         <div class="col-12 mb-2">
-                            <p class="h5">เวลาสูงสุดในการใช้งาน : <strong>{{ parking_stat.max_parking_duration }}</strong> นาที</p>
+                            <p class="h5">เวลาสูงสุดในการใช้งาน : 
+                                <strong>{{ parking_stat.max_parking_duration if parking_stat.max_parking_duration is not none else "ไม่พบข้อมูล" }}</strong>
+                            </p>
                         </div>
+                        
                         <div class="col-12 mb-2">
-                            <p class="h5">เวลาต่ำสุดในการใช้งาน : <strong>{{ parking_stat.min_parking_duration }}</strong> นาที</p>
+                            <p class="h5">เวลาต่ำสุดในการใช้งาน : 
+                                <strong>{{ parking_stat.min_parking_duration if parking_stat.min_parking_duration is not none else "ไม่พบข้อมูล" }}</strong>
+                            </p>
                         </div>
+                        
                     </div>
                 </div>
             </div>

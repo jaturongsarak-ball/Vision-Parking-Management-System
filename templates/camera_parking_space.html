@@ -207,7 +207,7 @@
 
     async function saveData() {
         console.log(points);
-        const response = await connect('POST', '/camera/save_parking_space?source={{source}}', points);
+        const response = await connect('POST', '/camera/save_parking_space', points);
         if (response.status === 'success' || response.status === 'warning') {
             showMessage(response.status, response.message);
             location.reload();

@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Sing up
+{% endblock %}
+
+{% block content %}
+<div class="container vh-100 d-flex justify-content-center align-items-center">
+    <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
+        <h1 class="text-center mb-4">สมัครสมาชิก</h1>
+        <form>
+            {% include "alert.html" %}
+            <div class="mb-3">
+                <label for="username" class="form-label">ผู้ใช้งาน</label>
+                <input type="text" class="form-control" id="username" placeholder="กรอกผู้ใช้งาน" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">รหัสผ่าน</label>
+                <input type="password" class="form-control" id="password" placeholder="กรอกรหัสผ่าน" required>
+            </div>
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">ยืนยันรหัสผ่าน</label>
+                <input type="password" class="form-control" id="confirmPassword" placeholder="กรอกรหัสผ่านอีกครั้ง" required>
+            </div>
+            <button type="button" class="btn btn-primary w-100 mb-2" onclick="handleSignup()">สมัครสมาชิก</button>
+            <a href="/auth/login" class="btn btn-secondary w-100">กลับไปหน้าเข้าสู่ระบบ</a>
+        </form>
+    </div>
+</div>
+<script>
+    async function handleSignup() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (username.trim() === '' || password.trim() === '') {
+            showMessage('warning', 'กรุณาตรวจกรอกข้อมูลให้ครบถ้วน');
+            return;
+        } else if (password !== confirmPassword) {
+            showMessage('warning', 'รหัสผ่านไม่ตรงกัน');
+            return;
+        } else {
+            const params = { username, password }
+            console.log(params)
+            const response = await connect('POST', '/auth/signup', params)
+            if (response.status === 'success') {
+                showMessage(response.status, response.message);
+                window.location.href = "/auth/login";
+            } else if (response.status === 'error') {
+                showMessage(response.status, response.message);
+            }
+        }
+    }
+</script>
+{% endblock %}

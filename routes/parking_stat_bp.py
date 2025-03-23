@@ -1,6 +1,7 @@
 import os
 from flask import Blueprint, render_template, request, send_file
 import database.mysql as mysql
+from routes.auth_bp import admin_required, login_required
 
 parking_stat_bp = Blueprint('parking_stat_bp', __name__)
 
@@ -30,8 +31,10 @@ def check_file():
                         continue
 
 @parking_stat_bp.route('/')
+@login_required
+@admin_required
 def parking_stat():
-    check_file()
+    # check_file()
         
     date_start = request.args.get('date_start', '')
     date_end = request.args.get('date_end', '')
@@ -124,6 +127,8 @@ def parking_stat():
                             end_page=end_page)
 
 @parking_stat_bp.route('/get_image', methods=['GET'])
+@login_required
+@admin_required
 def get_image():
     image_path = request.args.get('path', '')
 

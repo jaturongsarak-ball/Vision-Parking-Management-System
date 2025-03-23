@@ -5,6 +5,7 @@ import re
 import cv2
 from flask import Blueprint, render_template, request, send_file, url_for
 import database.mysql as mysql
+from routes.auth_bp import admin_required, login_required
 
 video_bp = Blueprint('video_bp', __name__)
 
@@ -41,10 +42,12 @@ def check_file():
                         os.remove(f'{dir_path}/{video_file}')
                     except Exception as e:
                         continue
+# check_file()
 
 @video_bp.route('/')
+@login_required
+@admin_required
 def search_videos():
-    check_file()
     
     role = request.args.get('role', 'all')
     name = request.args.get('name', '')
@@ -138,6 +141,8 @@ def search_videos():
         return render_template('video.html', video_data=[], page=page, total_pages=total_pages, start_page=start_page, end_page=end_page)
 
 @video_bp.route('/send_video')
+@login_required
+@admin_required
 def send_video():
     file_path = request.args.get('file_path')
 
